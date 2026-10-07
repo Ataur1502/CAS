@@ -79,6 +79,13 @@ export const AdminResults: React.FC = () => {
     window.open(csvUrl, '_blank');
   };
 
+  const handleDownloadZip = () => {
+    const zipUrl = api.getDownloadSubmissionsZipUrl({
+      exam_id: examFilter,
+    });
+    window.open(zipUrl, '_blank');
+  };
+
   const formatDateTime = (dateStr: string) => {
     if (!dateStr) return '—';
     const d = new Date(dateStr);
@@ -98,12 +105,22 @@ export const AdminResults: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={handleExportCsv}
-            className="inline-flex items-center px-4 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-sm transition self-start sm:self-auto"
-          >
-            <Download className="h-4 w-4 mr-1.5" /> Export Results to CSV
-          </button>
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+            <button
+              onClick={handleDownloadZip}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-semibold text-sm shadow-sm transition"
+              title="Download all candidate code solutions in a single .ZIP archive organized by question and roll number"
+            >
+              <FileCode className="h-4 w-4 mr-1.5" /> Download All Submissions (.ZIP)
+            </button>
+
+            <button
+              onClick={handleExportCsv}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-sm transition"
+            >
+              <Download className="h-4 w-4 mr-1.5" /> Export Results to CSV
+            </button>
+          </div>
         </div>
 
         {/* Filter bar */}

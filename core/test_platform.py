@@ -1267,5 +1267,35 @@ class CodingExamComprehensiveTests(TestCase):
         self.assertEqual(results[0]['submissions'][0]['file_name'], 'solution.cpp')
         self.assertIsNotNone(results[0]['submissions'][0]['file_url'])
 
+    def test_student_submit_exam_returns_submissions_and_admin_zip_download(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.coding_exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_q = start_resp.data['questions'][0]
+
+        fake_file = SimpleUploadedFile("my_solution.py", b"print('hello world')", content_type="text/x-python")
+        self.client.post(f'/api/attempts/{attempt_id}/answers/', {'question_id': assigned_q['id'], 'file': fake_file}, format='multipart')
+
+        sub_resp = self.client.post(f'/api/attempts/{attempt_id}/submit/')
+        self.assertEqual(sub_resp.status_code, status.HTTP_200_OK)
+        self.assertIn('submissions', sub_resp.data)
+        self.assertEqual(len(sub_resp.data['submissions']), 1)
+        self.assertEqual(sub_resp.data['submissions'][0]['file_name'], 'my_solution.py')
+
+        # Admin downloads ZIP archive
+        self.client.force_authenticate(user=self.admin_user)
+        zip_resp = self.client.get(f'/api/admin/download-submissions/?exam_id={self.coding_exam.id}')
+        self.assertEqual(zip_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(zip_resp['Content-Type'], 'application/zip')
+        self.assertTrue(zip_resp.has_header('Content-Disposition'))
+        self.assertIn('attachment;', zip_resp['Content-Disposition'])
+
+        # Verify ZIP contents
+        import io, zipfile
+        zip_buf = io.BytesIO(zip_resp.content)
+        with zipfile.ZipFile(zip_buf, 'r') as zf:
+            file_names = zf.namelist()
+            self.assertTrue(any('my_solution.py' in fn for fn in file_names))
+
 
 

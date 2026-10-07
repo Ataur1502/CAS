@@ -1,5 +1,9 @@
 import csv
+import io
+import os
+import re
 import random
+import zipfile
 from datetime import timedelta
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
@@ -36,6 +40,19 @@ from .serializers import (
     StudentExamCardSerializer,
     StudentSerializer,
 )
+
+
+def authenticate_request_token(request):
+    """Allows Bearer/Token in header or ?token= in query string for direct file download routes."""
+    if not request.user or not request.user.is_authenticated:
+        token_key = request.query_params.get('token')
+        if token_key:
+            try:
+                token_obj = Token.objects.select_related('user').get(key=token_key)
+                request.user = token_obj.user
+            except Exception:
+                pass
+    return request.user
 
 
 def calculate_attempt_score(attempt):
@@ -353,7 +370,7 @@ def student_start_exam(request, exam_id):
         ]
         AttemptQuestion.objects.bulk_create(attempt_questions)
 
-    serializer = ExamAttemptDetailSerializer(attempt)
+    serializer = ExamAttemptDetailSerializer(attempt, context={'request': request})
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -381,7 +398,7 @@ def student_attempt_detail(request, attempt_id):
         if now > allowed_end:
             attempt = auto_submit_attempt(attempt, reason='TIME_EXPIRED')
 
-    serializer = ExamAttemptDetailSerializer(attempt)
+    serializer = ExamAttemptDetailSerializer(attempt, context={'request': request})
     return Response(serializer.data)
 
 
@@ -481,13 +498,17 @@ def student_save_answer(request, attempt_id):
         defaults=defaults
     )
 
+    file_url = answer.uploaded_file.url if answer.uploaded_file else None
+    if file_url and not file_url.startswith('http'):
+        file_url = request.build_absolute_uri(file_url)
+
     return Response({
         'success': True,
         'question_id': q_id_int,
         'selected_option_id': answer.selected_option_id,
         'selected_option_key': answer.selected_option.option_key if answer.selected_option else None,
         'file_name': answer.file_name,
-        'file_url': answer.uploaded_file.url if answer.uploaded_file else None,
+        'file_url': file_url,
         'file_size': answer.file_size,
         'answered_at': answer.answered_at,
     })
@@ -524,6 +545,21 @@ def student_submit_exam(request, attempt_id):
         locked_attempt.save()
 
     is_coding = getattr(locked_attempt.exam, 'exam_type', 'MCQ') == 'CODING'
+    submissions = []
+    if is_coding:
+        for ans in locked_attempt.answers.select_related('question').all():
+            if ans.uploaded_file or ans.file_name:
+                url = ans.uploaded_file.url if ans.uploaded_file else None
+                if url and not url.startswith('http'):
+                    url = request.build_absolute_uri(url)
+                submissions.append({
+                    'question_id': ans.question_id,
+                    'question_text': ans.question.question_text[:80],
+                    'file_name': ans.file_name,
+                    'file_url': url,
+                    'file_size': ans.file_size,
+                })
+
     return Response({
         'success': True,
         'status': locked_attempt.status,
@@ -533,6 +569,7 @@ def student_submit_exam(request, attempt_id):
         'percentage': None if is_coding else locked_attempt.percentage,
         'results_published': not is_coding,
         'submitted_at': locked_attempt.submitted_at,
+        'submissions': submissions,
         'message': 'Your code submissions have been recorded safely. Results will be published soon after post-exam validation.' if is_coding else 'Exam submitted successfully.',
     })
 
@@ -619,7 +656,7 @@ def student_results(request):
         status__in=['SUBMITTED', 'AUTO_SUBMITTED']
     ).select_related('exam').order_by('-submitted_at')
 
-    serializer = ResultSerializer(attempts, many=True)
+    serializer = ResultSerializer(attempts, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -755,11 +792,16 @@ class AdminExamViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def admin_results_view(request):
     """
     List results with filters, and optional CSV export.
+    Supports session auth or token in query param (?token=...).
     """
+    authenticate_request_token(request)
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return Response({"error": "Admin authentication required."}, status=status.HTTP_403_FORBIDDEN)
+
     queryset = ExamAttempt.objects.filter(
         status__in=['SUBMITTED', 'AUTO_SUBMITTED']
     ).select_related('student', 'student__department', 'exam').order_by('-submitted_at')
@@ -820,8 +862,68 @@ def admin_results_view(request):
     paginator = StandardResultsSetPagination()
     page = paginator.paginate_queryset(queryset, request)
     if page is not None:
-        serializer = ResultSerializer(page, many=True)
+        serializer = ResultSerializer(page, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
 
-    serializer = ResultSerializer(queryset, many=True)
+    serializer = ResultSerializer(queryset, many=True, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def admin_download_all_submissions(request):
+    """
+    Packages all uploaded student coding files for an exam into a single ZIP archive.
+    Folder structure inside ZIP:
+      <question_number>/<roll_number>/<filename>
+    e.g.:
+      3/2311cs040156/solution.py
+      9/2311cs040156/solution.py
+    """
+    authenticate_request_token(request)
+    if not request.user.is_authenticated or not (request.user.is_staff or request.user.is_superuser):
+        return Response({"error": "Admin authentication required."}, status=status.HTTP_403_FORBIDDEN)
+
+    exam_id = request.query_params.get('exam_id')
+    attempts = ExamAttempt.objects.filter(status__in=['SUBMITTED', 'AUTO_SUBMITTED'])
+    exam_title = "all_exams"
+    if exam_id:
+        attempts = attempts.filter(exam_id=exam_id)
+        exam = Exam.objects.filter(id=exam_id).first()
+        if exam:
+            clean_title = re.sub(r'[^a-zA-Z0-9_-]', '_', exam.title)
+            exam_title = f"{exam.id}_{clean_title[:30]}"
+
+    answers = StudentAnswer.objects.filter(
+        attempt__in=attempts,
+        uploaded_file__isnull=False
+    ).exclude(uploaded_file='').select_related('attempt__student', 'question')
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        files_added = 0
+        for ans in answers:
+            if not ans.uploaded_file:
+                continue
+            try:
+                file_path = ans.uploaded_file.path
+                if os.path.exists(file_path):
+                    # Destination name in zip matches relative storage name (e.g. 3/2311cs040156/solution.py)
+                    arcname = ans.uploaded_file.name
+                    zip_file.write(file_path, arcname=arcname)
+                    files_added += 1
+            except Exception:
+                continue
+
+        if files_added == 0:
+            zip_file.writestr(
+                'README.txt',
+                f'No candidate submission files found for exam: {exam_title}.\n'
+                f'Total completed attempts inspected: {attempts.count()}\n'
+                f'Total student answer records with files: {answers.count()}\n'
+            )
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{exam_title}_submissions.zip"'
+    return response

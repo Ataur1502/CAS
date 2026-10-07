@@ -245,10 +245,20 @@ export const api = {
     apiRequest<{
       success: boolean;
       status: string;
-      score: number;
+      exam_type?: string;
+      score: number | null;
       max_score: number;
-      percentage: number;
+      percentage: number | null;
       submitted_at: string;
+      results_published?: boolean;
+      message?: string;
+      submissions?: Array<{
+        question_id: number;
+        question_text: string;
+        file_name: string;
+        file_url?: string;
+        file_size: number;
+      }>;
     }>(`/attempts/${attemptId}/submit/`, {
       method: 'POST',
     }),
@@ -344,9 +354,19 @@ export const api = {
   getExportCsvUrl: (params: { exam_id?: string; department_id?: string; search?: string } = {}) => {
     const q = new URLSearchParams();
     q.append('export', 'csv');
+    const token = localStorage.getItem('token');
+    if (token) q.append('token', token);
     if (params.exam_id) q.append('exam_id', params.exam_id);
     if (params.department_id) q.append('department_id', params.department_id);
     if (params.search) q.append('search', params.search);
     return `${BASE_URL}/admin/results/?${q.toString()}`;
+  },
+
+  getDownloadSubmissionsZipUrl: (params: { exam_id?: string } = {}) => {
+    const q = new URLSearchParams();
+    const token = localStorage.getItem('token');
+    if (token) q.append('token', token);
+    if (params.exam_id) q.append('exam_id', params.exam_id);
+    return `${BASE_URL}/admin/download-submissions/?${q.toString()}`;
   },
 };

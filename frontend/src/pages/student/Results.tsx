@@ -126,7 +126,7 @@ export const Results: React.FC = () => {
                         </p>
                       </div>
 
-                      {res.submissions && res.submissions.length > 0 && (
+                      {res.submissions && res.submissions.length > 0 ? (
                         <div className="pt-2 border-t border-purple-200/70">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-purple-900 block mb-1.5">
                             Your Uploaded Files ({res.submissions.length}):
@@ -135,13 +135,20 @@ export const Results: React.FC = () => {
                             {res.submissions.map((sub, sIdx) => (
                               <div
                                 key={sIdx}
-                                className="flex items-center justify-between bg-white/90 border border-purple-100 rounded-lg px-3 py-1.5 text-xs"
+                                className="flex items-center justify-between bg-white/90 border border-purple-100 rounded-lg px-3 py-1.5 text-xs gap-2"
                               >
                                 <div className="flex items-center space-x-2 min-w-0">
                                   <FileCode className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                                  <span className="font-mono font-medium text-slate-800 truncate">
-                                    {sub.file_name}
-                                  </span>
+                                  <div className="min-w-0">
+                                    <span className="font-mono font-medium text-slate-800 truncate block">
+                                      {sub.file_name}
+                                    </span>
+                                    {sub.file_size ? (
+                                      <span className="text-[10px] text-slate-400 font-sans">
+                                        {(sub.file_size / 1024).toFixed(1)} KB
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </div>
                                 {sub.file_url && (
                                   <a
@@ -149,7 +156,7 @@ export const Results: React.FC = () => {
                                     download={sub.file_name}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-purple-700 hover:text-purple-900 font-semibold text-xs ml-3 flex-shrink-0 underline"
+                                    className="text-purple-700 hover:text-purple-900 font-semibold text-xs ml-2 flex-shrink-0 underline"
                                   >
                                     Download
                                   </a>
@@ -157,6 +164,10 @@ export const Results: React.FC = () => {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t border-purple-200/70 text-[11px] text-purple-900/60 italic">
+                          No solution files were uploaded during this assessment.
                         </div>
                       )}
                     </div>

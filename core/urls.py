@@ -29,6 +29,7 @@ urlpatterns = [
     path('admin/students/', views.admin_students_view, name='admin-students-list'),
     path('admin/students/<int:student_id>/', views.admin_students_view, name='admin-student-detail'),
     path('admin/results/', views.admin_results_view, name='admin-results-list'),
+    path('admin/download-submissions/', views.admin_download_all_submissions, name='admin-download-submissions'),
 
     # Admin router endpoints (questions, exams)
     path('', include(router.urls)),

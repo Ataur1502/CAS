@@ -505,17 +505,21 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
 
     def get_answers(self, obj):
         answers = obj.answers.select_related('selected_option').all()
-        return {
-            ans.question_id: {
+        request = self.context.get('request')
+        result = {}
+        for ans in answers:
+            url = ans.uploaded_file.url if ans.uploaded_file else None
+            if url and request and not url.startswith('http'):
+                url = request.build_absolute_uri(url)
+            result[ans.question_id] = {
                 'option_id': ans.selected_option_id,
                 'option_key': ans.selected_option.option_key if ans.selected_option else None,
                 'file_name': ans.file_name,
-                'file_url': ans.uploaded_file.url if ans.uploaded_file else None,
+                'file_url': url,
                 'file_size': ans.file_size,
                 'answered_at': ans.answered_at,
             }
-            for ans in answers
-        }
+        return result
 
 
 # ========================================================
@@ -580,13 +584,18 @@ class ResultSerializer(serializers.ModelSerializer):
 
     def get_submissions(self, obj):
         answers = obj.answers.select_related('question').all()
-        return [
-            {
-                'question_id': a.question_id,
-                'question_text': a.question.question_text[:80],
-                'file_name': a.file_name,
-                'file_url': a.uploaded_file.url if a.uploaded_file else None,
-                'file_size': a.file_size,
-            }
-            for a in answers if a.uploaded_file or a.file_name
-        ]
+        request = self.context.get('request')
+        result = []
+        for a in answers:
+            if a.uploaded_file or a.file_name:
+                url = a.uploaded_file.url if a.uploaded_file else None
+                if url and request and not url.startswith('http'):
+                    url = request.build_absolute_uri(url)
+                result.append({
+                    'question_id': a.question_id,
+                    'question_text': a.question.question_text[:80],
+                    'file_name': a.file_name,
+                    'file_url': url,
+                    'file_size': a.file_size,
+                })
+        return result

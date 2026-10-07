@@ -374,6 +374,19 @@ export const ExamRoom: React.FC = () => {
 
     try {
       const res = await api.submitExam(attempt.id);
+      if (res.submissions && res.submissions.length > 0) {
+        setFileAnswers((prev) => {
+          const updated = { ...prev };
+          res.submissions!.forEach((s) => {
+            updated[s.question_id] = {
+              file_name: s.file_name,
+              file_url: s.file_url ?? null,
+              file_size: s.file_size,
+            };
+          });
+          return updated;
+        });
+      }
       setAttempt((prev) =>
         prev
           ? {
@@ -471,9 +484,12 @@ export const ExamRoom: React.FC = () => {
   // Attempt Terminated / Submitted View
   if (attempt?.status === 'SUBMITTED' || attempt?.status === 'AUTO_SUBMITTED' || autoSubmitted) {
     const isAuto = attempt?.status === 'AUTO_SUBMITTED' || autoSubmitted;
+    const uploadedCount = Object.values(fileAnswers).filter(Boolean).length;
+    const totalAssigned = attempt?.questions?.length || 0;
+
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white max-w-md w-full rounded-2xl shadow-xl p-8 border border-slate-200 text-center">
+        <div className="bg-white max-w-xl w-full rounded-2xl shadow-xl p-6 sm:p-8 border border-slate-200 text-center">
           {isAuto ? (
             <div className="h-16 w-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShieldAlert className="h-10 w-10" />
@@ -528,10 +544,85 @@ export const ExamRoom: React.FC = () => {
             )}
           </div>
 
+          {/* Uploaded Solution Files Breakdown (Practical Coding) */}
+          {attempt?.exam_type === 'CODING' && (
+            <div className="mb-6 text-left">
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center">
+                  <FileCode className="h-4 w-4 mr-1.5 text-purple-600" />
+                  Your Uploaded Files ({uploadedCount} / {totalAssigned})
+                </h3>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center">
+                  <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" /> Saved on Server
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {attempt.questions && attempt.questions.length > 0 ? (
+                  attempt.questions.map((q, idx) => {
+                    const fileAns = fileAnswers[q.id];
+                    const firstLine = q.question_text.split('\n')[0].replace(/^#+\s*/, '').trim();
+                    return (
+                      <div
+                        key={q.id}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/70 gap-2"
+                      >
+                        <div className="flex items-start sm:items-center space-x-2.5 min-w-0">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-purple-800 text-xs font-bold flex items-center justify-center mt-0.5 sm:mt-0">
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-800 truncate max-w-[240px] sm:max-w-xs" title={firstLine}>
+                              {firstLine}
+                            </p>
+                            {fileAns ? (
+                              <p className="text-[11px] font-mono text-emerald-700 flex items-center mt-0.5">
+                                <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600 flex-shrink-0" />
+                                <span className="truncate max-w-[180px] font-bold">{fileAns.file_name}</span>
+                                <span className="text-slate-400 ml-1.5 font-sans">
+                                  ({((fileAns.file_size || 0) / 1024).toFixed(1)} KB)
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-amber-600 italic mt-0.5">
+                                No solution file uploaded
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {fileAns?.file_url && (
+                          <a
+                            href={fileAns.file_url}
+                            download={fileAns.file_name}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 flex-shrink-0 inline-flex items-center transition shadow-sm"
+                          >
+                            <Download className="h-3 w-3 mr-1" /> Download
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-slate-500 italic">No questions found.</p>
+                )}
+              </div>
+
+              <div className="mt-2.5 text-[11px] text-slate-500 bg-purple-50/50 p-2.5 rounded-lg border border-purple-100 flex items-center">
+                <span className="mr-1.5">📁</span>
+                <span>
+                  <strong>Server Location:</strong> Submissions are organized into <code>media/&lt;question_number&gt;/&lt;roll_number&gt;/&lt;file&gt;</code>.
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => navigate('/results')}
-              className="flex-1 py-3 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-semibold text-sm transition"
+              className="flex-1 py-3 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-semibold text-sm transition shadow-sm"
             >
               {attempt?.exam_type === 'CODING' ? 'View My Submissions →' : 'View My Results →'}
             </button>

@@ -8,7 +8,7 @@ services:
     volumes:
       - sqlite_data:/app/data
       - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./media:/app/media
     environment:
       - DEBUG=False
       - SQLITE_DIR=/app/data
@@ -35,7 +35,7 @@ services:
       - certbot_conf:/etc/letsencrypt
       - certbot_www:/var/www/certbot
       - static_volume:/usr/share/nginx/static:ro
-      - media_volume:/usr/share/nginx/media:ro
+      - ./media:/usr/share/nginx/media:ro
     depends_on:
       - backend
 
@@ -53,6 +53,5 @@ services:
 volumes:
   sqlite_data:
   static_volume:
-  media_volume:
   certbot_conf:
   certbot_www:

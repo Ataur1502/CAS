@@ -25,8 +25,8 @@ COPY . .
 # Copy compiled frontend distribution from stage 1
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Create directories for persistent SQLite DB and static files
-RUN mkdir -p /app/data /app/staticfiles
+# Create directories for persistent SQLite DB, static files, and media uploads
+RUN mkdir -p /app/data /app/staticfiles /app/media
 
 EXPOSE 8000
 

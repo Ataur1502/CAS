@@ -178,6 +178,19 @@ def student_submission_upload_path(instance, filename):
             if m2:
                 q_folder = str(int(m2.group(1)))
 
+    if not q_folder and hasattr(instance, 'attempt') and instance.attempt:
+        try:
+            from core.models import AttemptQuestion, ExamQuestion
+            aq = AttemptQuestion.objects.filter(attempt=instance.attempt, question_id=getattr(instance, 'question_id', None)).first()
+            if aq and aq.question_order:
+                q_folder = str(aq.question_order)
+            else:
+                eq = ExamQuestion.objects.filter(exam=instance.attempt.exam, question_id=getattr(instance, 'question_id', None)).first()
+                if eq and eq.order:
+                    q_folder = str(eq.order)
+        except Exception:
+            pass
+
     if not q_folder:
         q_folder = str(getattr(instance, 'question_id', 'unknown_question'))
 
