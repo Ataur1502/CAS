@@ -53,10 +53,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cas_exam.wsgi.application'
 
+SQLITE_DIR = Path(os.environ.get('SQLITE_DIR', BASE_DIR))
+os.makedirs(SQLITE_DIR, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': SQLITE_DIR / 'db.sqlite3',
     }
 }
 

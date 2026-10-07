@@ -9,6 +9,7 @@ from .models import (
     ExamQuestion,
     ExamAttempt,
     StudentAnswer,
+    AttemptQuestion,
 )
 
 
@@ -66,3 +67,9 @@ class ExamAttemptAdmin(admin.ModelAdmin):
 @admin.register(StudentAnswer)
 class StudentAnswerAdmin(admin.ModelAdmin):
     list_display = ('attempt', 'question', 'selected_option', 'answered_at')
+
+
+@admin.register(AttemptQuestion)
+class AttemptQuestionAdmin(admin.ModelAdmin):
+    list_display = ('attempt', 'question', 'question_order', 'created_at')
+    list_filter = ('attempt__exam',)

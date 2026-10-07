@@ -10,14 +10,19 @@ Designed strictly for lightweight, reliable university examination administratio
 
 ```
 +-------------------------------------------------------------+
-|                      React SPA (Vite)                       |
-|   (Student Exam Room, Dashboard, Admin Console, Tailwind)   |
+|               Nginx Reverse Proxy (Port 80)                 |
+|  - Serves compiled React SPA assets directly (caching/gzip) |
+|  - SPA fallback route (try_files $uri $uri/ /index.html)    |
+|  - Reverse-proxies /api/ and /django-admin/ to Gunicorn     |
+|  - Serves staticfiles (Django admin assets)                 |
 +-------------------------------------------------------------+
                                |
-                               | REST APIs (Session / Token Auth)
+                               | HTTP (port 8000)
                                v
 +-------------------------------------------------------------+
-|               Django 5.x / 6.x + DRF Backend                |
+|             Gunicorn + Django 5.x / 6.x + DRF               |
+|  - Server-side question randomization (e.g. 60 -> 30)       |
+|  - Fixed AttemptQuestion persistence per student attempt    |
 |  - Server-side timing & department eligibility control      |
 |  - Integrity violation tracking (Visibility / Focus / Full) |
 |  - Server-side atomic scoring (Answers never sent to UI)    |
@@ -26,10 +31,21 @@ Designed strictly for lightweight, reliable university examination administratio
                                |
                                v
 +-------------------------------------------------------------+
-|                       SQLite Database                       |
-|                        (db.sqlite3)                         |
+|              Persistent SQLite Database                     |
+|           (/app/data/db.sqlite3 via Named Volume)           |
 +-------------------------------------------------------------+
 ```
+
+---
+
+## 🎲 Question Bank Randomization (e.g. 60 Pool → 30 Selected)
+
+- **Configurable Pool & Attempt Size**: Admins can assign any number of MCQs to an exam pool (e.g. 60 questions) and configure `questions_per_attempt` (e.g. 30 questions).
+- **Server-Side Randomization**: Questions are randomly selected exclusively on the server (`random.sample`) when a student starts an exam attempt. No full question pools are ever leaked to the client.
+- **Fixed Attempt Persistence (`AttemptQuestion`)**: Once chosen, the selected questions and their sequential display order (`1` to `30`) are persisted into `AttemptQuestion` records. Refreshing, reconnecting, navigating, or autosaving preserves the exact same questions and order for that attempt.
+- **Unassigned Question Protection**: Any attempt to submit an answer for a question not assigned to the student's attempt is strictly rejected with a `400 Bad Request`.
+- **Validation**: If an exam's question pool has fewer questions than `questions_per_attempt`, the server prevents starting and returns an error: *"This exam does not have enough questions. At least X questions are required."*
+- **Strict Scoring**: The total marks, max score, and student score are calculated strictly from the assigned subset of questions.
 
 ---
 
@@ -103,21 +119,24 @@ The frontend will run at `http://localhost:5173/` and proxies `/api` calls direc
 
 ---
 
-## 🐳 Docker Deployment
+## 🐳 Production Docker Deployment (Nginx + Gunicorn + Persistent SQLite)
 
-The application can be deployed as a single multi-stage container persisting SQLite data in a Docker volume:
+The application is deployed with production-grade separation of concerns:
+- **`cas_nginx`**: Nginx reverse proxy listening on port `80`, serving compiled React SPA static assets directly with gzip compression and caching, handling SPA routing fallbacks, and forwarding `/api/` and `/django-admin/` to Gunicorn.
+- **`cas_backend`**: Django REST Framework powered by Gunicorn WSGI on port `8000`. Runs migrations, seeds cohorts, and collects admin staticfiles on startup.
+- **`sqlite_data`**: Named Docker volume mounted at `/app/data/`, persisting SQLite database `db.sqlite3` across container restarts and rebuilds.
 
 ```bash
 docker compose up --build
 ```
 
-Access the platform directly at `http://localhost:8000/`.
+Access the platform directly at `http://localhost/` (Port 80).
 
 ---
 
 ## 🧪 Running the Test Suite
 
-A comprehensive test suite with 34 tests verifies authentication, access control, server-side timing, question safety, autosaving, scoring, and integrity auto-submission:
+A comprehensive test suite with **44 tests** verifies authentication, access control, server-side timing, question safety, question bank randomization, answer validation, autosaving, scoring, and integrity auto-submission:
 
 ```bash
 python manage.py test core.test_platform
@@ -125,7 +144,7 @@ python manage.py test core.test_platform
 
 Output:
 ```text
-Ran 34 tests in ~2s
+Ran 44 tests in ~2.2s
 OK
 ```
 

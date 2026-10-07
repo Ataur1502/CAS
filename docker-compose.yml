@@ -1,18 +1,39 @@
 services:
-  web:
-    build: .
-    container_name: cas_exam_app
-    ports:
-      - "8000:8000"
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cas_backend
+    restart: unless-stopped
     volumes:
-      - cas_sqlite_data:/app
+      - sqlite_data:/app/data
+      - static_volume:/app/staticfiles
     environment:
       - DEBUG=False
+      - SQLITE_DIR=/app/data
       - DJANGO_SECRET_KEY=cas-exam-production-secret-key-301students
       - ADMIN_USERNAME=ADMIN01
       - ADMIN_PASSWORD=AdminPassword123!
       - STUDENT_PASSWORD=StudentPass123!
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: cas_nginx
     restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/usr/share/nginx/static:ro
+    depends_on:
+      - backend
 
 volumes:
-  cas_sqlite_data:
+  sqlite_data:
+  static_volume:

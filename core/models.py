@@ -30,6 +30,7 @@ class Exam(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
     duration_minutes = models.PositiveIntegerField(help_text="Duration in minutes")
+    questions_per_attempt = models.PositiveIntegerField(default=30, help_text="Number of questions randomly selected per attempt")
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -138,3 +139,17 @@ class StudentAnswer(models.Model):
 
     def __str__(self):
         return f"Attempt {self.attempt_id} - Q{self.question_id}: {self.selected_option_id}"
+
+
+class AttemptQuestion(models.Model):
+    attempt = models.ForeignKey(ExamAttempt, on_delete=models.CASCADE, related_name='attempt_questions')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='attempt_questions')
+    question_order = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (('attempt', 'question'), ('attempt', 'question_order'))
+        ordering = ['question_order', 'id']
+
+    def __str__(self):
+        return f"Attempt {self.attempt_id} - Q{self.question_order}: {self.question_id}"

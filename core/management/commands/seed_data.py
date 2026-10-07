@@ -416,6 +416,7 @@ class Command(BaseCommand):
             defaults={
                 "description": "Comprehensive assessment covering core information security, encryption, and network defense principles.",
                 "duration_minutes": 30,
+                "questions_per_attempt": 10,
                 "start_datetime": start_time,
                 "end_datetime": end_time,
                 "is_active": True,
@@ -423,6 +424,7 @@ class Command(BaseCommand):
         )
         cs_exam.start_datetime = start_time
         cs_exam.end_datetime = end_time
+        cs_exam.questions_per_attempt = 10
         cs_exam.is_active = True
         cs_exam.save()
 
@@ -437,6 +439,7 @@ class Command(BaseCommand):
             defaults={
                 "description": "Assessment of IoT protocols, sensors, edge computing, and LPWAN wireless technologies.",
                 "duration_minutes": 30,
+                "questions_per_attempt": 10,
                 "start_datetime": start_time,
                 "end_datetime": end_time,
                 "is_active": True,
@@ -444,6 +447,7 @@ class Command(BaseCommand):
         )
         iot_exam.start_datetime = start_time
         iot_exam.end_datetime = end_time
+        iot_exam.questions_per_attempt = 10
         iot_exam.is_active = True
         iot_exam.save()
 
@@ -458,6 +462,7 @@ class Command(BaseCommand):
             defaults={
                 "description": "Joint technical assessment for both Cyber Security and Internet of Things cohorts.",
                 "duration_minutes": 45,
+                "questions_per_attempt": 10,
                 "start_datetime": start_time,
                 "end_datetime": end_time,
                 "is_active": True,
@@ -465,6 +470,7 @@ class Command(BaseCommand):
         )
         joint_exam.start_datetime = start_time
         joint_exam.end_datetime = end_time
+        joint_exam.questions_per_attempt = 10
         joint_exam.is_active = True
         joint_exam.save()
 

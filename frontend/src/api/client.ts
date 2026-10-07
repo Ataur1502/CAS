@@ -56,6 +56,8 @@ export interface ExamCard {
   max_score: number | null;
   percentage: number | null;
   question_count: number;
+  question_pool_size?: number;
+  questions_per_attempt?: number;
   total_marks: number;
 }
 

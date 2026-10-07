@@ -18,6 +18,8 @@ interface ExamItem {
   title: string;
   description: string;
   duration_minutes: number;
+  questions_per_attempt: number;
+  question_pool_size?: number;
   start_datetime: string;
   end_datetime: string;
   is_active: boolean;
@@ -44,6 +46,7 @@ export const Exams: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(30);
+  const [questionsPerAttempt, setQuestionsPerAttempt] = useState(30);
   const [startDatetime, setStartDatetime] = useState('');
   const [endDatetime, setEndDatetime] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -78,6 +81,7 @@ export const Exams: React.FC = () => {
     setTitle('');
     setDescription('');
     setDurationMinutes(30);
+    setQuestionsPerAttempt(30);
 
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -100,6 +104,7 @@ export const Exams: React.FC = () => {
     setTitle(exam.title);
     setDescription(exam.description);
     setDurationMinutes(exam.duration_minutes);
+    setQuestionsPerAttempt(exam.questions_per_attempt || 30);
 
     const toLocalISO = (isoStr: string) => {
       const d = new Date(isoStr);
@@ -162,10 +167,18 @@ export const Exams: React.FC = () => {
       return;
     }
 
+    if (selectedQuestions.length > 0 && selectedQuestions.length < questionsPerAttempt) {
+      setModalError(
+        `Assigned question pool size (${selectedQuestions.length}) must be at least the questions per attempt (${questionsPerAttempt}).`
+      );
+      return;
+    }
+
     const payload = {
       title: title.trim(),
       description: description.trim(),
       duration_minutes: durationMinutes,
+      questions_per_attempt: questionsPerAttempt,
       start_datetime: start.toISOString(),
       end_datetime: end.toISOString(),
       is_active: isActive,
@@ -173,7 +186,7 @@ export const Exams: React.FC = () => {
       questions: selectedQuestions.map((qId, idx) => ({ id: qId, order: idx + 1 })),
     };
 
-  try {
+    try {
       if (editingExam) {
         await api.updateExam(editingExam.id, payload);
       } else {
@@ -309,7 +322,7 @@ export const Exams: React.FC = () => {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
                   <span className="text-slate-700">
-                    Questions: {exam.question_count} | Marks: {exam.total_marks}
+                    Pool: {exam.question_pool_size || exam.question_count} Qs | {exam.questions_per_attempt || 30} per student | {exam.total_marks} Marks
                   </span>
                   <span className={exam.is_active ? 'text-emerald-600' : 'text-slate-400'}>
                     {exam.is_active ? 'Active' : 'Inactive'}
@@ -371,10 +384,10 @@ export const Exams: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      Duration (Minutes)
+                      Duration (Mins)
                     </label>
                     <input
                       type="number"
@@ -383,6 +396,21 @@ export const Exams: React.FC = () => {
                       required
                       value={durationMinutes}
                       onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                      Questions / Student
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="300"
+                      required
+                      value={questionsPerAttempt}
+                      onChange={(e) => setQuestionsPerAttempt(parseInt(e.target.value, 10))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                     />
                   </div>

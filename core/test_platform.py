@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import (
+    AttemptQuestion,
     Department,
     Exam,
     ExamAttempt,
@@ -134,6 +135,7 @@ class CASPlatformComprehensiveTests(TestCase):
             title="CS Security Exam",
             description="Cyber Security midterm",
             duration_minutes=30,
+            questions_per_attempt=2,
             start_datetime=now - timedelta(minutes=10),
             end_datetime=now + timedelta(minutes=50),
             is_active=True
@@ -147,6 +149,7 @@ class CASPlatformComprehensiveTests(TestCase):
             title="IoT Systems Exam",
             description="IoT test",
             duration_minutes=30,
+            questions_per_attempt=1,
             start_datetime=now - timedelta(minutes=10),
             end_datetime=now + timedelta(minutes=50),
             is_active=True
@@ -159,6 +162,7 @@ class CASPlatformComprehensiveTests(TestCase):
             title="Future CS Exam",
             description="Not started yet",
             duration_minutes=30,
+            questions_per_attempt=1,
             start_datetime=now + timedelta(hours=2),
             end_datetime=now + timedelta(hours=3),
             is_active=True
@@ -171,6 +175,7 @@ class CASPlatformComprehensiveTests(TestCase):
             title="Past CS Exam",
             description="Already ended",
             duration_minutes=30,
+            questions_per_attempt=1,
             start_datetime=now - timedelta(hours=3),
             end_datetime=now - timedelta(hours=1),
             is_active=True
@@ -643,3 +648,262 @@ class CASPlatformComprehensiveTests(TestCase):
         self.assertEqual(Student.objects.filter(department__code='CS').count(), 181)
         self.assertEqual(Student.objects.filter(department__code='IOT').count(), 120)
         self.assertEqual(Exam.objects.count(), initial_exams + 3)
+
+
+class QuestionRandomizationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # Department
+        self.cs_dept = Department.objects.create(name="Cyber Security", code="CS")
+
+        # Two students in CS
+        self.alice_user = User.objects.create_user(
+            username="2311CS040001",
+            password="StudentPass123!",
+            first_name="Alice",
+            last_name="CS"
+        )
+        self.alice_student = Student.objects.create(
+            user=self.alice_user,
+            roll_number="2311CS040001",
+            full_name="Alice Cyber",
+            department=self.cs_dept,
+            active=True
+        )
+
+        self.bob_user = User.objects.create_user(
+            username="2311CS040002",
+            password="StudentPass123!",
+            first_name="Bob",
+            last_name="CS"
+        )
+        self.bob_student = Student.objects.create(
+            user=self.bob_user,
+            roll_number="2311CS040002",
+            full_name="Bob Cyber",
+            department=self.cs_dept,
+            active=True
+        )
+
+        # Create 60 questions pool
+        self.questions_pool = []
+        options_to_create = []
+        for i in range(1, 61):
+            q = Question.objects.create(
+                question_text=f"Question {i}: Security concept explanation?",
+                marks=2,
+                category="Security",
+                difficulty="Medium"
+            )
+            self.questions_pool.append(q)
+            options_to_create.extend([
+                Option(question=q, option_key="A", option_text=f"Q{i} Correct Answer", is_correct=True),
+                Option(question=q, option_key="B", option_text=f"Q{i} Incorrect Option 1", is_correct=False),
+                Option(question=q, option_key="C", option_text=f"Q{i} Incorrect Option 2", is_correct=False),
+                Option(question=q, option_key="D", option_text=f"Q{i} Incorrect Option 3", is_correct=False),
+            ])
+        Option.objects.bulk_create(options_to_create)
+
+        now = timezone.now()
+        # 1. Main exam with 60 questions pool, 30 per attempt
+        self.exam_60 = Exam.objects.create(
+            title="Cyber Security Grand Exam",
+            description="60 questions pool, 30 per attempt",
+            duration_minutes=45,
+            questions_per_attempt=30,
+            start_datetime=now - timedelta(minutes=10),
+            end_datetime=now + timedelta(minutes=60),
+            is_active=True
+        )
+        ExamDepartment.objects.create(exam=self.exam_60, department=self.cs_dept)
+        exam_questions = [
+            ExamQuestion(exam=self.exam_60, question=q, order=idx + 1)
+            for idx, q in enumerate(self.questions_pool)
+        ]
+        ExamQuestion.objects.bulk_create(exam_questions)
+
+        # 2. Exam with only 15 questions in pool (insufficient for 30 questions_per_attempt)
+        self.insufficient_exam = Exam.objects.create(
+            title="Insufficient Pool Exam",
+            description="Only 15 questions in pool",
+            duration_minutes=45,
+            questions_per_attempt=30,
+            start_datetime=now - timedelta(minutes=10),
+            end_datetime=now + timedelta(minutes=60),
+            is_active=True
+        )
+        ExamDepartment.objects.create(exam=self.insufficient_exam, department=self.cs_dept)
+        ExamQuestion.objects.bulk_create([
+            ExamQuestion(exam=self.insufficient_exam, question=self.questions_pool[i], order=i + 1)
+            for i in range(15)
+        ])
+
+        # 3. Exam with exactly 30 questions in pool (exact match for 30 questions_per_attempt)
+        self.exact_30_exam = Exam.objects.create(
+            title="Exact 30 Pool Exam",
+            description="Exactly 30 questions in pool",
+            duration_minutes=45,
+            questions_per_attempt=30,
+            start_datetime=now - timedelta(minutes=10),
+            end_datetime=now + timedelta(minutes=60),
+            is_active=True
+        )
+        ExamDepartment.objects.create(exam=self.exact_30_exam, department=self.cs_dept)
+        ExamQuestion.objects.bulk_create([
+            ExamQuestion(exam=self.exact_30_exam, question=self.questions_pool[i], order=i + 1)
+            for i in range(30)
+        ])
+
+    def test_random_selection_selects_exact_30_questions_from_60_pool(self):
+        self.client.force_authenticate(user=self.alice_user)
+        resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['question_count'], 30)
+        self.assertEqual(len(resp.data['questions']), 30)
+
+        # Verify DB records
+        attempt_id = resp.data['id']
+        assigned_count = AttemptQuestion.objects.filter(attempt_id=attempt_id).count()
+        self.assertEqual(assigned_count, 30)
+
+    def test_selected_questions_have_no_duplicates_and_sequential_orders(self):
+        self.client.force_authenticate(user=self.alice_user)
+        resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        questions = resp.data['questions']
+        q_ids = [q['id'] for q in questions]
+        self.assertEqual(len(q_ids), 30)
+        self.assertEqual(len(set(q_ids)), 30)
+
+        # Check question orders are 1..30
+        orders = [q['question_order'] for q in questions]
+        self.assertEqual(orders, list(range(1, 31)))
+
+    def test_selected_questions_belong_to_exam_pool(self):
+        self.client.force_authenticate(user=self.alice_user)
+        resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        selected_ids = {q['id'] for q in resp.data['questions']}
+        pool_ids = set(ExamQuestion.objects.filter(exam=self.exam_60).values_list('question_id', flat=True))
+        self.assertEqual(len(pool_ids), 60)
+        self.assertTrue(selected_ids.issubset(pool_ids))
+
+    def test_questions_remain_fixed_on_reloading_attempt_details(self):
+        self.client.force_authenticate(user=self.alice_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        attempt_id = start_resp.data['id']
+        original_questions = [(q['id'], q['question_order']) for q in start_resp.data['questions']]
+
+        # Simulate page refresh / reconnect by calling GET /api/attempts/{id}/
+        reload_resp = self.client.get(f'/api/attempts/{attempt_id}/')
+        self.assertEqual(reload_resp.status_code, status.HTTP_200_OK)
+        reloaded_questions = [(q['id'], q['question_order']) for q in reload_resp.data['questions']]
+
+        self.assertEqual(original_questions, reloaded_questions)
+
+    def test_questions_remain_fixed_across_multiple_api_calls_and_answering(self):
+        self.client.force_authenticate(user=self.alice_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        attempt_id = start_resp.data['id']
+        first_q = start_resp.data['questions'][0]
+        first_q_opt = first_q['options'][0]
+        original_q_ids = [q['id'] for q in start_resp.data['questions']]
+
+        # Save an answer
+        ans_resp = self.client.post(f'/api/attempts/{attempt_id}/answers/', {
+            'question_id': first_q['id'],
+            'option_id': first_q_opt['id']
+        })
+        self.assertEqual(ans_resp.status_code, status.HTTP_200_OK)
+
+        # Make multiple GET requests to simulate question navigation and checks
+        for _ in range(5):
+            get_resp = self.client.get(f'/api/attempts/{attempt_id}/')
+            current_ids = [q['id'] for q in get_resp.data['questions']]
+            self.assertEqual(original_q_ids, current_ids)
+
+    def test_student_cannot_submit_answer_for_unassigned_question(self):
+        self.client.force_authenticate(user=self.alice_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_ids = {q['id'] for q in start_resp.data['questions']}
+
+        # Find a question in pool not assigned
+        all_pool_questions = self.questions_pool
+        unassigned_q = next(q for q in all_pool_questions if q.id not in assigned_ids)
+        unassigned_opt = unassigned_q.options.first()
+
+        # Try to submit answer for unassigned question
+        ans_resp = self.client.post(f'/api/attempts/{attempt_id}/answers/', {
+            'question_id': unassigned_q.id,
+            'option_id': unassigned_opt.id
+        })
+        self.assertEqual(ans_resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("not assigned to your exam attempt", ans_resp.data['error'])
+
+    def test_exam_with_fewer_than_required_questions_cannot_start(self):
+        self.client.force_authenticate(user=self.alice_user)
+        resp = self.client.post(f'/api/exams/{self.insufficient_exam.id}/start/')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("This exam does not have enough questions. At least 30 questions are required.", resp.data['error'])
+
+    def test_exam_with_exact_required_questions_uses_all_30(self):
+        self.client.force_authenticate(user=self.alice_user)
+        resp = self.client.post(f'/api/exams/{self.exact_30_exam.id}/start/')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['question_count'], 30)
+        selected_ids = {q['id'] for q in resp.data['questions']}
+        exact_pool_ids = set(ExamQuestion.objects.filter(exam=self.exact_30_exam).values_list('question_id', flat=True))
+        self.assertEqual(selected_ids, exact_pool_ids)
+
+    def test_scoring_and_max_score_calculated_strictly_from_30_assigned_questions(self):
+        self.client.force_authenticate(user=self.alice_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_questions = start_resp.data['questions']
+
+        # Total marks for 30 questions @ 2 marks each should be 60 (NOT 120 from pool)
+        self.assertEqual(start_resp.data['total_marks'], 60)
+
+        # Answer 10 correctly, leave 20 unanswered
+        for q in assigned_questions[:10]:
+            # Find correct option in question
+            correct_opt = Question.objects.get(id=q['id']).options.get(is_correct=True)
+            self.client.post(f'/api/attempts/{attempt_id}/answers/', {
+                'question_id': q['id'],
+                'option_id': correct_opt.id
+            })
+
+        # Submit attempt
+        submit_resp = self.client.post(f'/api/attempts/{attempt_id}/submit/')
+        self.assertEqual(submit_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(submit_resp.data['score'], 20.0)
+        self.assertEqual(submit_resp.data['max_score'], 60.0)
+        self.assertAlmostEqual(submit_resp.data['percentage'], 33.33, places=2)
+
+        # Verify DB attempt state
+        attempt = ExamAttempt.objects.get(id=attempt_id)
+        self.assertEqual(attempt.score, 20.0)
+        self.assertEqual(attempt.max_score, 60.0)
+        self.assertAlmostEqual(attempt.percentage, 33.33, places=2)
+        self.assertEqual(StudentAnswer.objects.filter(attempt=attempt).count(), 10)
+        self.assertEqual(attempt.attempt_questions.count(), 30)
+
+    def test_different_students_receive_different_random_combinations(self):
+        # Alice starts
+        self.client.force_authenticate(user=self.alice_user)
+        resp_alice = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        alice_ids = [q['id'] for q in resp_alice.data['questions']]
+
+        # Bob starts
+        self.client.force_authenticate(user=self.bob_user)
+        resp_bob = self.client.post(f'/api/exams/{self.exam_60.id}/start/')
+        bob_ids = [q['id'] for q in resp_bob.data['questions']]
+
+        self.assertEqual(len(alice_ids), 30)
+        self.assertEqual(len(bob_ids), 30)
+        self.assertEqual(len(set(alice_ids)), 30)
+        self.assertEqual(len(set(bob_ids)), 30)
+
+        # With 60 pool and 30 sample, probability of identical set is ~ 1 / 1.18e20
+        self.assertNotEqual(set(alice_ids), set(bob_ids))
+

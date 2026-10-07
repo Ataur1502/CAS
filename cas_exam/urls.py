@@ -10,6 +10,13 @@ urlpatterns = [
     path('api/', include('core.urls')),
 ]
 
+# Static files route (e.g. for Django admin when served via Gunicorn)
+staticfiles_dir = settings.BASE_DIR / 'staticfiles'
+if staticfiles_dir.exists():
+    urlpatterns += [
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': staticfiles_dir}),
+    ]
+
 # If frontend build exists, serve the SPA assets and fallback
 frontend_dist = settings.BASE_DIR / 'frontend' / 'dist'
 if frontend_dist.exists():
@@ -17,3 +24,4 @@ if frontend_dist.exists():
         re_path(r'^assets/(?P<path>.*)$', serve, {'document_root': frontend_dist / 'assets'}),
         re_path(r'^(?!api/|django-admin/).*$', TemplateView.as_view(template_name='index.html')),
     ]
+

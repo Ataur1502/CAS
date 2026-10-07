@@ -150,6 +150,7 @@ class AdminExamSerializer(serializers.ModelSerializer):
         child=serializers.DictField(), write_only=True, required=False
     )
     question_count = serializers.SerializerMethodField()
+    question_pool_size = serializers.SerializerMethodField()
     total_marks = serializers.SerializerMethodField()
     exam_questions = serializers.SerializerMethodField()
 
@@ -160,6 +161,7 @@ class AdminExamSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'duration_minutes',
+            'questions_per_attempt',
             'start_datetime',
             'end_datetime',
             'is_active',
@@ -168,6 +170,7 @@ class AdminExamSerializer(serializers.ModelSerializer):
             'department_ids',
             'questions',
             'question_count',
+            'question_pool_size',
             'total_marks',
             'exam_questions',
             'created_at',
@@ -178,6 +181,9 @@ class AdminExamSerializer(serializers.ModelSerializer):
         return list(obj.exam_departments.values_list('department_id', flat=True))
 
     def get_question_count(self, obj):
+        return obj.exam_questions.count()
+
+    def get_question_pool_size(self, obj):
         return obj.exam_questions.count()
 
     def get_total_marks(self, obj):
@@ -309,10 +315,19 @@ class StudentExamCardSerializer(serializers.ModelSerializer):
         return att.percentage if att and att.status in ['SUBMITTED', 'AUTO_SUBMITTED'] else None
 
     def get_question_count(self, obj):
-        return obj.exam_questions.count()
+        att = self._get_attempt(obj)
+        if att and att.attempt_questions.exists():
+            return att.attempt_questions.count()
+        pool_count = obj.exam_questions.count()
+        return min(obj.questions_per_attempt, pool_count) if obj.questions_per_attempt else pool_count
 
     def get_total_marks(self, obj):
-        return sum(eq.question.marks for eq in obj.exam_questions.select_related('question').all())
+        att = self._get_attempt(obj)
+        if att and att.attempt_questions.exists():
+            return sum(aq.question.marks for aq in att.attempt_questions.select_related('question').all())
+        pool_qs = obj.exam_questions.select_related('question').all()
+        target = min(obj.questions_per_attempt, pool_qs.count()) if obj.questions_per_attempt else pool_qs.count()
+        return sum(eq.question.marks for eq in pool_qs[:target])
 
     def get_status(self, obj):
         student = self.context.get('student')
@@ -363,6 +378,9 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
     questions = serializers.SerializerMethodField()
     answers = serializers.SerializerMethodField()
     server_time = serializers.SerializerMethodField()
+    question_count = serializers.SerializerMethodField()
+    max_score = serializers.SerializerMethodField()
+    total_marks = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamAttempt
@@ -378,10 +396,12 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
             'submitted_at',
             'score',
             'max_score',
+            'total_marks',
             'percentage',
             'violation_count',
             'submission_reason',
             'remaining_seconds',
+            'question_count',
             'questions',
             'answers',
             'server_time',
@@ -401,8 +421,35 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
         remaining = int((allowed_end - now).total_seconds())
         return max(0, remaining)
 
+    def get_question_count(self, obj):
+        if obj.attempt_questions.exists():
+            return obj.attempt_questions.count()
+        return obj.exam.exam_questions.count()
+
+    def get_max_score(self, obj):
+        if obj.max_score > 0:
+            return obj.max_score
+        if obj.attempt_questions.exists():
+            return float(sum(aq.question.marks for aq in obj.attempt_questions.select_related('question').all()))
+        return float(sum(eq.question.marks for eq in obj.exam.exam_questions.select_related('question').all()))
+
+    def get_total_marks(self, obj):
+        return self.get_max_score(obj)
+
     def get_questions(self, obj):
         # Return student-safe questions (NO is_correct)
+        # Use attempt_questions if populated (randomized & persisted for this attempt)
+        attempt_qs = obj.attempt_questions.select_related('question').prefetch_related('question__options').order_by('question_order', 'id')
+        if attempt_qs.exists():
+            questions = []
+            for aq in attempt_qs:
+                q_data = StudentQuestionSerializer(aq.question).data
+                q_data['order'] = aq.question_order
+                q_data['question_order'] = aq.question_order
+                questions.append(q_data)
+            return questions
+
+        # Fallback for legacy attempts without AttemptQuestion records
         eqs = obj.exam.exam_questions.select_related('question').prefetch_related('question__options').order_by('order', 'id')
         questions = []
         for eq in eqs:

@@ -1,4 +1,5 @@
 import csv
+import random
 from datetime import timedelta
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
@@ -23,6 +24,7 @@ from .models import (
     Question,
     Student,
     StudentAnswer,
+    AttemptQuestion,
 )
 from .permissions import IsAdminUser, IsStudentUser
 from .serializers import (
@@ -39,12 +41,19 @@ from .serializers import (
 def calculate_attempt_score(attempt):
     """
     Authoritative server-side score calculation.
+    Maximum marks calculated using ONLY the questions assigned to this attempt.
     Correct = question.marks
     Incorrect = 0
     Unanswered = 0
     """
-    exam_questions = attempt.exam.exam_questions.select_related('question').all()
-    max_score = sum(eq.question.marks for eq in exam_questions)
+    attempt_qs = attempt.attempt_questions.select_related('question').all()
+    if attempt_qs.exists():
+        questions = [aq.question for aq in attempt_qs]
+    else:
+        # Fallback for legacy attempts
+        questions = [eq.question for eq in attempt.exam.exam_questions.select_related('question').all()]
+
+    max_score = sum(q.marks for q in questions)
 
     answers = {
         ans.question_id: ans.selected_option
@@ -52,8 +61,7 @@ def calculate_attempt_score(attempt):
     }
 
     score = 0.0
-    for eq in exam_questions:
-        q = eq.question
+    for q in questions:
         selected_opt = answers.get(q.id)
         if selected_opt and selected_opt.is_correct:
             score += q.marks
@@ -304,13 +312,41 @@ def student_start_exam(request, exam_id):
         serializer = ExamAttemptDetailSerializer(attempt)
         return Response(serializer.data)
 
-    # 4. Create new attempt
-    attempt = ExamAttempt.objects.create(
-        student=student,
-        exam=exam,
-        status='IN_PROGRESS',
-        started_at=now,
+    # 4. Create new attempt with randomized questions
+    req_count = exam.questions_per_attempt or 30
+    available_question_ids = list(
+        ExamQuestion.objects.filter(exam=exam, question__is_active=True)
+        .order_by('id')
+        .values_list('question_id', flat=True)
     )
+
+    if len(available_question_ids) < req_count:
+        return Response(
+            {"error": f"This exam does not have enough questions. At least {req_count} questions are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(available_question_ids) == req_count:
+        selected_question_ids = available_question_ids
+    else:
+        selected_question_ids = random.sample(available_question_ids, req_count)
+
+    with transaction.atomic():
+        attempt = ExamAttempt.objects.create(
+            student=student,
+            exam=exam,
+            status='IN_PROGRESS',
+            started_at=now,
+        )
+        attempt_questions = [
+            AttemptQuestion(
+                attempt=attempt,
+                question_id=qid,
+                question_order=idx
+            )
+            for idx, qid in enumerate(selected_question_ids, start=1)
+        ]
+        AttemptQuestion.objects.bulk_create(attempt_questions)
 
     serializer = ExamAttemptDetailSerializer(attempt)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -350,6 +386,7 @@ def student_save_answer(request, attempt_id):
     """
     Autosaves an answer.
     Prevents modifications if attempt is submitted or time expired.
+    Validates question belongs to this student's attempt.
     """
     student = request.user.student_profile
     try:
@@ -379,9 +416,19 @@ def student_save_answer(request, attempt_id):
     if not question_id:
         return Response({"error": "question_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Verify question is part of this exam
-    if not ExamQuestion.objects.filter(exam=attempt.exam, question_id=question_id).exists():
-        return Response({"error": "Question is not part of this exam."}, status=status.HTTP_400_BAD_REQUEST)
+    # Verify question is assigned to this attempt
+    if attempt.attempt_questions.exists():
+        if not attempt.attempt_questions.filter(question_id=question_id).exists():
+            return Response(
+                {"error": "This question was not assigned to your exam attempt."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        if not ExamQuestion.objects.filter(exam=attempt.exam, question_id=question_id).exists():
+            return Response(
+                {"error": "Question is not part of this exam."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     selected_option = None
     if option_id:
