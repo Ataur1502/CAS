@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Send,
   Maximize,
+  Minimize,
   ShieldAlert,
   ArrowLeft,
   Info
@@ -26,8 +27,9 @@ export const ExamRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fullscreen gate
+  // Fullscreen gate and state
   const [hasEnteredFullscreen, setHasEnteredFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(() => Boolean(document.fullscreenElement));
 
   // Timer
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
@@ -174,7 +176,9 @@ export const ExamRoom: React.FC = () => {
     };
 
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      if (!active) {
         triggerViolation('Fullscreen Exited');
       }
     };
@@ -209,16 +213,64 @@ export const ExamRoom: React.FC = () => {
     };
   }, [hasEnteredFullscreen, attempt, triggerViolation]);
 
-  // Request fullscreen
+  // Keep fullscreen state in sync globally
+  useEffect(() => {
+    const handleSyncFullscreen = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleSyncFullscreen);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleSyncFullscreen);
+    };
+  }, []);
+
+  // Request fullscreen and begin exam
   const enterExamFullscreen = async () => {
     try {
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
+      } else if ((document.documentElement as any).webkitRequestFullscreen) {
+        await (document.documentElement as any).webkitRequestFullscreen();
+      } else if ((document.documentElement as any).msRequestFullscreen) {
+        await (document.documentElement as any).msRequestFullscreen();
       }
+      setIsFullscreen(true);
     } catch (err) {
       console.warn('Fullscreen request bypassed or denied:', err);
     }
     setHasEnteredFullscreen(true);
+  };
+
+  // Fullscreen button action handler
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if ((document.documentElement as any).webkitRequestFullscreen) {
+          await (document.documentElement as any).webkitRequestFullscreen();
+        } else if ((document.documentElement as any).msRequestFullscreen) {
+          await (document.documentElement as any).msRequestFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        const confirmed = window.confirm(
+          'Warning: Exiting fullscreen mode will be recorded as an exam integrity violation. Are you sure you want to exit fullscreen?'
+        );
+        if (confirmed) {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitExitFullscreen) {
+            await (document as any).webkitExitFullscreen();
+          } else if ((document as any).msExitFullscreen) {
+            await (document as any).msExitFullscreen();
+          }
+          setIsFullscreen(false);
+        }
+      }
+    } catch (err) {
+      console.warn('Fullscreen toggle failed:', err);
+    }
   };
 
   // 5. Select Option & Autosave
@@ -419,8 +471,8 @@ export const ExamRoom: React.FC = () => {
           </div>
         </div>
 
-        {/* Violations & Timer */}
-        <div className="flex items-center space-x-6">
+        {/* Violations, Fullscreen & Timer */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
           {/* Violation Indicator */}
           <div
             className={`flex items-center px-3 py-1 rounded-md text-xs font-semibold ${
@@ -430,6 +482,31 @@ export const ExamRoom: React.FC = () => {
             <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
             Violations: {violationCount} / 3
           </div>
+
+          {/* Fullscreen Button */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition border ${
+              isFullscreen
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                : 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-400 animate-pulse shadow-sm'
+            }`}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            aria-label="Toggle Fullscreen Mode"
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize className="h-4 w-4 mr-1.5 text-sky-400" />
+                <span>Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize className="h-4 w-4 mr-1.5" />
+                <span>Fullscreen</span>
+              </>
+            )}
+          </button>
 
           {/* Countdown Clock */}
           <div
@@ -454,9 +531,35 @@ export const ExamRoom: React.FC = () => {
 
       {/* Violation Alert Banner */}
       {warningMessage && (
-        <div className="bg-red-600 text-white px-6 py-2 text-sm font-semibold flex items-center justify-center space-x-2 animate-bounce">
-          <AlertTriangle className="h-4 w-4" />
+        <div className="bg-red-600 text-white px-6 py-2 text-sm font-semibold flex items-center justify-center space-x-3 animate-bounce">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>{warningMessage}</span>
+          {!isFullscreen && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="ml-2 px-3 py-1 bg-white text-red-700 font-bold text-xs rounded-md shadow hover:bg-red-50 transition inline-flex items-center"
+            >
+              <Maximize className="h-3.5 w-3.5 mr-1" /> Re-enter Fullscreen
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Non-Fullscreen Warning Strip */}
+      {!isFullscreen && hasEnteredFullscreen && !isTerminatedRef.current && (
+        <div className="bg-amber-500 text-slate-950 px-6 py-2 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-sm border-b border-amber-600">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="h-4 w-4 text-slate-950 flex-shrink-0" />
+            <span>You are currently not in fullscreen mode. Fullscreen is required for this examination.</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md transition inline-flex items-center shadow"
+          >
+            <Maximize className="h-3.5 w-3.5 mr-1" /> Return to Fullscreen
+          </button>
         </div>
       )}
 
@@ -532,6 +635,23 @@ export const ExamRoom: React.FC = () => {
             </button>
 
             <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="hidden sm:inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className="h-4 w-4 mr-1.5 text-slate-500" /> Fullscreen
+                  </>
+                ) : (
+                  <>
+                    <Maximize className="h-4 w-4 mr-1.5 text-amber-600" /> Fullscreen
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={() => {
                   if (currentIndex < totalQuestions - 1) {
