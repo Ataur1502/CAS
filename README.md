@@ -38,15 +38,23 @@ Designed strictly for lightweight, reliable university examination administratio
 
 ---
 
-## 🎲 Question Bank Randomization (60-Question Pool → 30 Selected)
+## 🎲 Examination Formats
 
-- **Authoritative Question Pool**: The assessment pool contains exactly 60 comprehensive technical MCQs (covering Java, Python, Data Structures & Algorithms, OOP & Inheritance, Agentic AI, Operating Systems, DBMS, Computer Networks, and System Design & Software Engineering) loaded from `core/data/mcq_pool.json`.
+The platform supports two distinct examination formats:
+
+### 1. Multiple Choice Questions (`MCQ`) Quiz
+- **Authoritative Question Pool**: Exactly 60 comprehensive technical MCQs loaded from `core/data/mcq_pool.json`.
 - **Configurable Pool & Attempt Size**: Exams support configurable `questions_per_attempt` (default: 30) selected from the assigned pool.
-- **Server-Side Randomization**: Questions are randomly selected exclusively on the server (`random.sample`) when a student starts an exam attempt. No full question pools or answer keys are ever leaked to the client.
-- **Fixed Attempt Persistence (`AttemptQuestion`)**: Once chosen, the selected 30 questions and their sequential display order (`1` to `30`) are persisted into `AttemptQuestion` database records. Refreshing, reconnecting, navigating, or autosaving preserves the exact same questions and order for that attempt.
-- **Unassigned Question Protection**: Any attempt to submit an answer for a question not assigned to the student's attempt is strictly rejected with a `400 Bad Request`.
-- **Validation**: If an exam's question pool has fewer questions than `questions_per_attempt`, the server prevents starting and returns an error: *"This exam does not have enough questions. At least 30 questions are required."*
-- **Strict Scoring**: The total marks, max score, and student score are calculated strictly from the assigned subset of questions.
+- **Server-Side Randomization**: Questions are randomly selected exclusively on the server (`random.sample`) when a student starts an exam attempt. No answer keys or full pools are ever leaked to the client.
+- **Attempt Persistence (`AttemptQuestion`)**: The selected questions and display order are persisted into `AttemptQuestion` records. Refreshing or reconnecting preserves the exact same questions and order.
+- **Full Integrity Monitoring**: Enforces Full Screen mode with leniency tracking (5–7 strikes) and automatic submission on threshold reached.
+
+### 2. Practical Coding & Problem Solving (`CODING`)
+- **10-Problem Coding Pool**: 10 comprehensive coding problems loaded from `core/data/coding_pool.json` via `python manage.py seed_coding_exam` (Algorithms, Data Structures, Concurrency, and System Design).
+- **Random 3 Problems per Student**: When a student begins the exam, exactly 3 distinct problems are randomly selected from the 10-question pool (`questions_per_attempt = 3`) and persisted to `AttemptQuestion`.
+- **Local IDE Freedom (No Violations / No In-Browser Editor)**: Students write, compile, run, and test solutions in their preferred local environment (VS Code, IntelliJ, PyCharm, CLion, Terminal, etc.). Fullscreen enforcement, blur tracking, and window-switching penalties are completely disabled.
+- **Source Code File Submission**: Students upload their source code file (`.py`, `.java`, `.cpp`, `.c`, `.js`, `.ts`, `.cs`, `.go`, `.rs`, etc., up to 15MB) per problem. Files can be replaced or removed anytime before final submission.
+- **Evaluator Inspection & Download**: Admin results console displays each student's submitted source files with direct download links for code grading and plagiarism analysis.
 
 ---
 
@@ -142,7 +150,7 @@ Access the platform directly at `http://localhost/` (Port 80).
 
 ## 🧪 Running the Test Suite
 
-A comprehensive test suite with **60 tests** verifies authentication, access control, server-side timing, question safety, 60-question pool loading, question bank randomization, answer validation, autosaving, scoring, and integrity auto-submission:
+A comprehensive test suite with **65 tests** verifies authentication, access control, server-side timing, question safety, 60-question pool loading, question bank randomization, answer validation, autosaving, scoring, integrity auto-submission, and practical coding exam workflows (3-question selection, source file upload, violation bypass):
 
 ```bash
 python manage.py test core.test_platform
@@ -150,7 +158,7 @@ python manage.py test core.test_platform
 
 Output:
 ```text
-Ran 60 tests in ~8s
+Ran 65 tests in ~6s
 OK
 ```
 
@@ -171,12 +179,13 @@ OK
 - Attempt duration is calculated by `min(started_at + duration_minutes, exam.end_datetime)`.
 - Client clock manipulation, browser refreshes, or state tampering cannot extend the exam duration.
 
-### 4. Integrity Violation Tracking (Deterrence)
+### 4. Integrity Violation Tracking & Leniency (Deterrence)
 - **Visibility Detection**: `document.visibilityState` detects tab switching or window minimization.
 - **Window Blur Detection**: `window.onblur` detects loss of browser window focus.
-- **Fullscreen Mode**: Exam requires fullscreen; exiting fullscreen records an integrity violation.
+- **Fullscreen Mode & Exam Window Controls**: Exam requires fullscreen; dedicated **Full Screen** buttons in the header, question navigation toolbar, warning banner, and floating restore button allow students to enter or re-engage fullscreen immediately at any time.
 - **Debounced Backend Increments**: Server increments `violation_count` atomically (with a client debounce to avoid false multi-counts).
-- **Auto-Submission**: Upon reaching **3 violations**, the server automatically submits the attempt with status `AUTO_SUBMITTED` and reason `EXAM_INTEGRITY_VIOLATION`. The attempt is permanently locked and cannot be reopened.
+- **Configurable Leniency (5–7 Violations)**: To provide students with fair leniency for accidental window unfocusing or trackpad gestures, exams support configurable `max_violations` (default: **6**, recommended: 5–7 strikes). Clear warning counters (`Violations: X / Max`) and a prominent *"FINAL WARNING"* alert students before reaching the threshold.
+- **Auto-Submission**: Upon reaching the configured limit (e.g. 6 violations), the server automatically submits the attempt with status `AUTO_SUBMITTED` and reason `EXAM_INTEGRITY_VIOLATION`. The attempt is permanently locked and cannot be reopened.
 - **Interaction Protection**: Right-click, text selection, and copy shortcuts are disabled inside the exam room without interfering with option selection, scrolling, or navigation.
 
 ---

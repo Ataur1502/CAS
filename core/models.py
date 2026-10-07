@@ -27,10 +27,16 @@ class Student(models.Model):
 
 
 class Exam(models.Model):
+    EXAM_TYPE_CHOICES = (
+        ('MCQ', 'Multiple Choice Quiz'),
+        ('CODING', 'Coding / Practical Assignment'),
+    )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
+    exam_type = models.CharField(max_length=20, choices=EXAM_TYPE_CHOICES, default='MCQ')
     duration_minutes = models.PositiveIntegerField(help_text="Duration in minutes")
     questions_per_attempt = models.PositiveIntegerField(default=30, help_text="Number of questions randomly selected per attempt")
+    max_violations = models.PositiveIntegerField(default=6, help_text="Maximum allowed integrity violations before auto-submission (recommended: 5-7)")
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -53,7 +59,12 @@ class ExamDepartment(models.Model):
 
 
 class Question(models.Model):
+    QUESTION_TYPE_CHOICES = (
+        ('MCQ', 'Multiple Choice Question'),
+        ('CODING', 'Coding / Practical Question'),
+    )
     source_id = models.CharField(max_length=50, blank=True, default='', db_index=True)
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='MCQ')
     question_text = models.TextField()
     marks = models.PositiveIntegerField(default=1)
     category = models.CharField(max_length=100, blank=True, default='')
@@ -135,6 +146,9 @@ class StudentAnswer(models.Model):
     attempt = models.ForeignKey(ExamAttempt, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='student_answers')
     selected_option = models.ForeignKey(Option, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_file = models.FileField(upload_to='submissions/%Y/%m/', null=True, blank=True)
+    file_name = models.CharField(max_length=255, blank=True, default='')
+    file_size = models.PositiveIntegerField(default=0)
     answered_at = models.DateTimeField(auto_now=True)
 
     class Meta:

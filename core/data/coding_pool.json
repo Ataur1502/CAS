@@ -1,0 +1,72 @@
+[
+  {
+    "source_id": "CODE-01",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 1: Balanced Brackets Validator\n\n**Problem Statement:**\nGiven a string `s` containing just the characters `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, determine if the input string is valid.\n\nAn input string is valid if:\n1. Open brackets must be closed by the same type of brackets.\n2. Open brackets must be closed in the correct order.\n3. Every close bracket has a corresponding open bracket of the same type.\n\n**Input Format:**\nA single line containing the string `s`.\n\n**Output Format:**\nPrint `true` if the string is valid, or `false` otherwise.\n\n**Constraints:**\n- `1 <= s.length <= 10^5`\n- `s` consists of parentheses only `'()[]{}'`.\n\n**Example 1:**\n- **Input:** `s = \"()[]{}\"`\n- **Output:** `true`\n\n**Example 2:**\n- **Input:** `s = \"(]\"`\n- **Output:** `false`\n\n**Example 3:**\n- **Input:** `s = \"([{}])\"`\n- **Output:** `true`\n\n*Instructions: Implement your solution in any language (Python, Java, C++, C#, Go, etc.) in your local IDE. Test your code with edge cases and upload your completed source code file.*"
+  },
+  {
+    "source_id": "CODE-02",
+    "category": "System Design & Data Structures",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 2: Least Recently Used (LRU) Cache\n\n**Problem Statement:**\nDesign and implement a data structure for a Least Recently Used (LRU) cache.\n\nImplement the `LRUCache` class:\n- `LRUCache(int capacity)`: Initialize the LRU cache with positive size `capacity`.\n- `int get(int key)`: Return the value of the `key` if the key exists, otherwise return `-1`.\n- `void put(int key, int value)`: Update the value of the `key` if that `key` exists. Otherwise, add the `key-value` pair to the cache. If the number of keys exceeds the `capacity` from this operation, evict the least recently used key.\n\nThe functions `get` and `put` must each run in $O(1)$ average time complexity.\n\n**Example Walkthrough:**\n```text\nLRUCache lRUCache = new LRUCache(2);\nlRUCache.put(1, 1); // cache is {1=1}\nlRUCache.put(2, 2); // cache is {1=1, 2=2}\nlRUCache.get(1);    // return 1\nlRUCache.put(3, 3); // LRU key was 2, evicts key 2, cache is {1=1, 3=3}\nlRUCache.get(2);    // returns -1 (not found)\nlRUCache.put(4, 4); // LRU key was 1, evicts key 1, cache is {4=4, 3=3}\nlRUCache.get(1);    // return -1 (not found)\nlRUCache.get(3);    // return 3\nlRUCache.get(4);    // return 4\n```\n\n**Constraints:**\n- `1 <= capacity <= 3000`\n- `0 <= key <= 10^4`\n- `0 <= value <= 10^5`\n- At most `2 * 10^5` calls will be made to `get` and `put`.\n\n*Instructions: Implement your class using a Doubly Linked List + Hash Map in your preferred language and upload the source file.*"
+  },
+  {
+    "source_id": "CODE-03",
+    "category": "Algorithms",
+    "difficulty": "Easy-Medium",
+    "marks": 10,
+    "question_text": "### Problem 3: Two-Sum Target Indices with O(n) Hash Map\n\n**Problem Statement:**\nGiven an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order.\n\nYour solution must achieve $O(n)$ time complexity and $O(n)$ space complexity using a Hash Map / Dictionary.\n\n**Input Format:**\n- First line: Space-separated integers representing `nums`.\n- Second line: Single integer representing `target`.\n\n**Output Format:**\nTwo space-separated integers representing the 0-indexed positions of the two numbers.\n\n**Example 1:**\n- **Input:** `nums = [2,7,11,15], target = 9`\n- **Output:** `[0, 1]` (Because nums[0] + nums[1] == 9, we return [0, 1])\n\n**Example 2:**\n- **Input:** `nums = [3,2,4], target = 6`\n- **Output:** `[1, 2]`\n\n**Constraints:**\n- `2 <= nums.length <= 10^5`\n- `-10^9 <= nums[i] <= 10^9`\n- `-10^9 <= target <= 10^9`\n\n*Instructions: Implement your optimal solution in your local development environment and upload the source code file.*"
+  },
+  {
+    "source_id": "CODE-04",
+    "category": "Tree Data Structures",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 4: Binary Tree Lowest Common Ancestor (LCA)\n\n**Problem Statement:**\nGiven a binary tree, find the lowest common ancestor (LCA) of two given nodes `p` and `q` in the tree.\n\nAccording to the definition of LCA on Wikipedia: “The lowest common ancestor is defined between two nodes `p` and `q` as the lowest node in `T` that has both `p` and `q` as descendants (where we allow a node to be a descendant of itself).”\n\n**Node Definition:**\n```text\nclass TreeNode {\n    int val;\n    TreeNode left;\n    TreeNode right;\n}\n```\n\n**Example 1:**\n- **Input:** root = `[3,5,1,6,2,0,8,null,null,7,4]`, `p = 5`, `q = 1`\n- **Output:** `3`\n- **Explanation:** The LCA of nodes 5 and 1 is 3.\n\n**Example 2:**\n- **Input:** root = `[3,5,1,6,2,0,8,null,null,7,4]`, `p = 5`, `q = 4`\n- **Output:** `5`\n- **Explanation:** The LCA of nodes 5 and 4 is 5, since a node can be a descendant of itself according to the LCA definition.\n\n**Constraints:**\n- The number of nodes in the tree is in the range `[2, 10^5]`.\n- All `Node.val` are unique.\n- `p != q`\n- `p` and `q` will exist in the tree.\n\n*Instructions: Write a clean recursive or iterative LCA algorithm and upload your source code.*"
+  },
+  {
+    "source_id": "CODE-05",
+    "category": "Algorithms & Intervals",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 5: Merge Overlapping Intervals\n\n**Problem Statement:**\nGiven an array of `intervals` where `intervals[i] = [start_i, end_i]`, merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.\n\n**Input Format:**\nA list of pairs `[start, end]` representing intervals.\n\n**Output Format:**\nThe merged list of non-overlapping intervals sorted by start time.\n\n**Example 1:**\n- **Input:** `intervals = [[1,3],[2,6],[8,10],[15,18]]`\n- **Output:** `[[1,6],[8,10],[15,18]]`\n- **Explanation:** Since intervals `[1,3]` and `[2,6]` overlap, merge them into `[1,6]`.\n\n**Example 2:**\n- **Input:** `intervals = [[1,4],[4,5]]`\n- **Output:** `[[1,5]]`\n- **Explanation:** Intervals `[1,4]` and `[4,5]` are considered overlapping.\n\n**Constraints:**\n- `1 <= intervals.length <= 10^4`\n- `intervals[i].length == 2`\n- `0 <= start_i <= end_i <= 10^4`\n\n*Instructions: Implement an $O(n \\log n)$ interval sorting and merging algorithm and upload your code.*"
+  },
+  {
+    "source_id": "CODE-06",
+    "category": "String Processing & Sliding Window",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 6: Longest Substring Without Repeating Characters\n\n**Problem Statement:**\nGiven a string `s`, find the length of the longest substring without duplicate characters.\n\nYour algorithm must run in $O(n)$ time using the sliding window technique with two pointers or an index-tracking hash table.\n\n**Example 1:**\n- **Input:** `s = \"abcabcbb\"`\n- **Output:** `3`\n- **Explanation:** The answer is `\"abc\"`, with the length of 3.\n\n**Example 2:**\n- **Input:** `s = \"bbbbb\"`\n- **Output:** `1`\n- **Explanation:** The answer is `\"b\"`, with the length of 1.\n\n**Example 3:**\n- **Input:** `s = \"pwwkew\"`\n- **Output:** `3`\n- **Explanation:** The answer is `\"wke\"`, with the length of 3. Notice that the answer must be a substring, `\"pwke\"` is a subsequence and not a substring.\n\n**Constraints:**\n- `0 <= s.length <= 5 * 10^4`\n- `s` consists of English letters, digits, symbols, and spaces.\n\n*Instructions: Implement the sliding window algorithm and upload your source file.*"
+  },
+  {
+    "source_id": "CODE-07",
+    "category": "Multithreading & Concurrency",
+    "difficulty": "Medium-Hard",
+    "marks": 10,
+    "question_text": "### Problem 7: Concurrent Task Worker Pool\n\n**Problem Statement:**\nImplement a concurrent Task Worker Pool (Executor Service) in Python, Java, Go, or C++ that manages a fixed number of worker threads to execute tasks from a shared thread-safe queue.\n\n**Requirements:**\n1. Worker pool takes a parameter `num_workers`.\n2. Provides a method `submit(task)` that adds a callable task with an identifier.\n3. Workers pull tasks and execute them concurrently without race conditions.\n4. Supports a `shutdown(wait=True)` method that terminates all worker threads gracefully once all queued tasks have finished executing.\n5. Handles worker exceptions without crashing the worker pool.\n\n**Example Usage (Python example):**\n```python\npool = WorkerPool(num_workers=4)\nresults = []\nfor i in range(10):\n    pool.submit(lambda x=i: x * x)\npool.shutdown(wait=True)\n```\n\n*Instructions: Implement using standard concurrency primitives (`threading`, `queue`, `Thread`, `Executor`, or goroutines/channels) and upload your source code file.*"
+  },
+  {
+    "source_id": "CODE-08",
+    "category": "System Design & Networking",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 8: Token Bucket Rate Limiter\n\n**Problem Statement:**\nDesign and implement an in-memory Token Bucket Rate Limiter algorithm used to prevent API abuse and DDoS attacks.\n\n**Specification:**\n1. `TokenBucket(capacity: int, refill_rate_per_sec: float)`\n   - `capacity`: Maximum tokens the bucket can hold at any point.\n   - `refill_rate_per_sec`: Number of tokens added to the bucket per second.\n2. `allow_request(tokens: int = 1) -> bool`:\n   - Calculates tokens accumulated based on elapsed time since the last token refill.\n   - If the bucket has at least `tokens` available, consumes `tokens` and returns `true`.\n   - If insufficient tokens are available, rejects the request and returns `false`.\n   - Ensure token count does not exceed `capacity`.\n\n**Example Scenario:**\n- A bucket with capacity 5 and refill rate 1 token/sec.\n- 5 requests arrive at `t = 0.0s`: all 5 are allowed.\n- A 6th request arrives at `t = 0.1s`: rejected (`false`).\n- At `t = 1.0s`: 1 token has refilled; 1 request is allowed (`true`).\n\n*Instructions: Implement the token bucket rate limiter with timestamp tracking and upload your source file.*"
+  },
+  {
+    "source_id": "CODE-09",
+    "category": "File Processing & Scripting",
+    "difficulty": "Medium",
+    "marks": 10,
+    "question_text": "### Problem 9: Web Server Access Log Analyzer\n\n**Problem Statement:**\nWrite a log parser program that reads lines from a standard Combined Log Format (or Apache/Nginx web server access log) and computes critical traffic metrics.\n\n**Log Line Sample:**\n`192.168.1.10 - - [07/Oct/2026:14:32:10 +0000] \"GET /api/v1/exams HTTP/1.1\" 200 4521`\n\n**Your Program Must Compute & Print:**\n1. Total number of requests processed.\n2. Number of unique IP addresses.\n3. The top 3 most frequently requested endpoints (e.g. `/api/v1/exams`).\n4. Distribution of HTTP Status codes (e.g. `200: 85%`, `404: 10%`, `500: 5%`).\n5. Busiest hour of the day (highest request count).\n\n**Constraints:**\n- Must handle malformed or empty log lines gracefully without crashing.\n- Memory-efficient line-by-line streaming suitable for large files.\n\n*Instructions: Write your parser script in Python, Go, Java, or JavaScript and upload your source code.*"
+  },
+  {
+    "source_id": "CODE-10",
+    "category": "Database Management Systems",
+    "difficulty": "Medium-Hard",
+    "marks": 10,
+    "question_text": "### Problem 10: In-Memory Key-Value Store with Nested Transactions\n\n**Problem Statement:**\nImplement a transactional in-memory key-value database supporting nested transactions.\n\n**Required Operations:**\n1. `set(key: str, value: str)`: Sets the value of a key in the current transaction scope.\n2. `get(key: str) -> str | None`: Returns the value for key, checking active transaction frames before the global store.\n3. `delete(key: str)`: Removes the key from the current transaction frame.\n4. `begin()`: Starts a new transaction block (supports nesting).\n5. `commit()`: Applies all changes made in the current transaction block to its parent block (or global store if outermost). Returns `false` if no transaction is active.\n6. `rollback()`: Discards all mutations made in the current transaction block and restores previous state. Returns `false` if no transaction is active.\n\n**Example Walkthrough:**\n```text\ndb.set(\"a\", \"10\")\ndb.begin()\ndb.set(\"a\", \"20\")\ndb.get(\"a\")    // returns \"20\"\ndb.begin()\ndb.set(\"a\", \"30\")\ndb.rollback()   // rolls back to \"20\"\ndb.get(\"a\")    // returns \"20\"\ndb.commit()     // commits \"20\" to global store\ndb.get(\"a\")    // returns \"20\"\n```\n\n*Instructions: Implement using a transaction stack of state deltas and upload your source file.*"
+  }
+]

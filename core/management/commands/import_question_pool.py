@@ -106,6 +106,7 @@ class Command(BaseCommand):
                     "description": "Comprehensive Technical Assessment across Core CS & Engineering Domains (60-Question Pool, 30 Questions per Attempt).",
                     "duration_minutes": 60,
                     "questions_per_attempt": 30,
+                    "max_violations": 6,
                     "start_datetime": now - timedelta(hours=2),
                     "end_datetime": now + timedelta(days=30),
                     "is_active": True,

@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
@@ -579,20 +580,23 @@ class CASPlatformComprehensiveTests(TestCase):
         v = self.client.post(f'/api/attempts/{attempt_id}/violation/', {'violation_count': 0})
         self.assertEqual(v.data['violation_count'], 1)
 
-    # 30. Third violation auto-submits
-    def test_third_violation_auto_submits(self):
+    # 30. Max violations auto-submits
+    def test_max_violation_auto_submits(self):
         self.client.force_authenticate(user=self.cs_user)
         start_resp = self.client.post(f'/api/exams/{self.cs_exam.id}/start/')
         attempt_id = start_resp.data['id']
 
-        self.client.post(f'/api/attempts/{attempt_id}/violation/')
-        self.client.post(f'/api/attempts/{attempt_id}/violation/')
-        v3 = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+        max_v = self.cs_exam.max_violations  # Default is 6
+        for i in range(1, max_v):
+            resp = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+            self.assertEqual(resp.data['violation_count'], i)
+            self.assertFalse(resp.data['auto_submitted'])
 
-        self.assertEqual(v3.status_code, status.HTTP_200_OK)
-        self.assertEqual(v3.data['violation_count'], 3)
-        self.assertTrue(v3.data['auto_submitted'])
-        self.assertEqual(v3.data['status'], 'AUTO_SUBMITTED')
+        v_final = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+        self.assertEqual(v_final.status_code, status.HTTP_200_OK)
+        self.assertEqual(v_final.data['violation_count'], max_v)
+        self.assertTrue(v_final.data['auto_submitted'])
+        self.assertEqual(v_final.data['status'], 'AUTO_SUBMITTED')
 
         # Check DB state
         attempt = ExamAttempt.objects.get(id=attempt_id)
@@ -605,8 +609,8 @@ class CASPlatformComprehensiveTests(TestCase):
         start_resp = self.client.post(f'/api/exams/{self.cs_exam.id}/start/')
         attempt_id = start_resp.data['id']
 
-        # Trigger 3 violations
-        for _ in range(3):
+        # Trigger max_violations
+        for _ in range(self.cs_exam.max_violations):
             self.client.post(f'/api/attempts/{attempt_id}/violation/')
 
         # Try to modify answer
@@ -619,6 +623,29 @@ class CASPlatformComprehensiveTests(TestCase):
         # Try to start again
         reopen = self.client.post(f'/api/exams/{self.cs_exam.id}/start/')
         self.assertEqual(reopen.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # 31b. Configurable max violations (e.g. 5 or 7 strikes leniency)
+    def test_custom_max_violations_configurable(self):
+        # Configure exam with 5 violations
+        self.cs_exam.max_violations = 5
+        self.cs_exam.save()
+
+        self.client.force_authenticate(user=self.cs_user_exc)
+        start_resp = self.client.post(f'/api/exams/{self.cs_exam.id}/start/')
+        attempt_id = start_resp.data['id']
+
+        for i in range(1, 5):
+            res = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+            self.assertEqual(res.data['violation_count'], i)
+            self.assertEqual(res.data['max_violations'], 5)
+            self.assertFalse(res.data['auto_submitted'])
+
+        # 5th violation triggers auto submit
+        v5 = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+        self.assertTrue(v5.data['auto_submitted'])
+        self.assertEqual(v5.data['violation_count'], 5)
+        self.assertEqual(v5.data['max_violations'], 5)
+
 
     # 32. Student cohort verification
     def test_student_cohort_special_roll_number(self):
@@ -1097,5 +1124,148 @@ class RealQuestionPoolTests(TestCase):
         initial_count = Question.objects.filter(is_active=True).count()
         call_command('import_question_pool')
         self.assertEqual(Question.objects.filter(is_active=True).count(), initial_count)
+
+
+class CodingExamComprehensiveTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # Departments
+        self.cs_dept = Department.objects.create(name="Cyber Security", code="CS")
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="test_coding_admin",
+            password="AdminPass12345!"
+        )
+
+        # Student user
+        self.student_user = User.objects.create_user(
+            username="2311CS099999",
+            password="StudentPass12345!"
+        )
+        self.student = Student.objects.create(
+            user=self.student_user,
+            roll_number="2311CS099999",
+            full_name="Coding Candidate",
+            department=self.cs_dept
+        )
+
+        # Create 10 coding questions
+        self.coding_questions = []
+        for i in range(1, 11):
+            q = Question.objects.create(
+                source_id=f"CODING-{i:03d}",
+                question_type="CODING",
+                question_text=f"Coding Problem #{i}: Implement algorithm and edge cases.",
+                marks=10,
+                category="Algorithms",
+                difficulty="Medium" if i <= 5 else "Hard",
+                explanation=f"Explanation for problem #{i}",
+                is_active=True
+            )
+            self.coding_questions.append(q)
+
+        # Create Coding Exam with 10 questions and questions_per_attempt = 3
+        now = timezone.now()
+        self.coding_exam = Exam.objects.create(
+            title="Practical Coding Assessment",
+            description="3 random coding problems from 10-question pool.",
+            exam_type="CODING",
+            duration_minutes=90,
+            start_datetime=now - timedelta(minutes=10),
+            end_datetime=now + timedelta(hours=3),
+            questions_per_attempt=3,
+            is_active=True
+        )
+        ExamDepartment.objects.create(exam=self.coding_exam, department=self.cs_dept)
+
+        for idx, q in enumerate(self.coding_questions, start=1):
+            ExamQuestion.objects.create(exam=self.coding_exam, question=q, order=idx)
+
+    def test_coding_exam_selects_random_3_questions(self):
+        self.client.force_authenticate(user=self.student_user)
+        resp = self.client.post(f'/api/exams/{self.coding_exam.id}/start/')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['exam_type'], 'CODING')
+        self.assertEqual(len(resp.data['questions']), 3)
+
+        # Verify assigned question IDs are from our 10 coding questions
+        pool_ids = {q.id for q in self.coding_questions}
+        assigned_ids = {q['id'] for q in resp.data['questions']}
+        self.assertEqual(len(assigned_ids), 3)
+        self.assertTrue(assigned_ids.issubset(pool_ids))
+
+    def test_coding_exam_file_upload_and_save(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.coding_exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_q = start_resp.data['questions'][0]
+        q_id = assigned_q['id']
+
+        # Upload solution file
+        fake_file = SimpleUploadedFile(
+            "solution.py",
+            b"def solution():\n    return 'Hello World'\n",
+            content_type="text/x-python"
+        )
+        ans_resp = self.client.post(
+            f'/api/attempts/{attempt_id}/answers/',
+            {'question_id': q_id, 'file': fake_file},
+            format='multipart'
+        )
+        self.assertEqual(ans_resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(ans_resp.data['success'])
+        self.assertEqual(ans_resp.data['file_name'], 'solution.py')
+        self.assertIsNotNone(ans_resp.data['file_url'])
+        self.assertGreater(ans_resp.data['file_size'], 0)
+
+        # Verify retrieval in attempt detail
+        det_resp = self.client.get(f'/api/attempts/{attempt_id}/')
+        self.assertEqual(det_resp.status_code, status.HTTP_200_OK)
+        ans_dict = det_resp.data['answers'].get(q_id) or det_resp.data['answers'].get(str(q_id))
+        self.assertIsNotNone(ans_dict)
+        self.assertEqual(ans_dict['file_name'], 'solution.py')
+        self.assertIsNotNone(ans_dict['file_url'])
+
+    def test_coding_exam_bypasses_violations(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.coding_exam.id}/start/')
+        attempt_id = start_resp.data['id']
+
+        # Send violation report
+        v_resp = self.client.post(f'/api/attempts/{attempt_id}/violation/')
+        self.assertEqual(v_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(v_resp.data['violation_count'], 0)
+        self.assertFalse(v_resp.data['auto_submitted'])
+
+        attempt = ExamAttempt.objects.get(id=attempt_id)
+        self.assertEqual(attempt.violation_count, 0)
+        self.assertEqual(attempt.status, 'IN_PROGRESS')
+
+    def test_coding_exam_submit_and_admin_inspection(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.coding_exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_q = start_resp.data['questions'][0]
+
+        fake_file = SimpleUploadedFile("solution.cpp", b"#include <iostream>\nint main(){return 0;}", content_type="text/x-c++src")
+        self.client.post(f'/api/attempts/{attempt_id}/answers/', {'question_id': assigned_q['id'], 'file': fake_file}, format='multipart')
+
+        sub_resp = self.client.post(f'/api/attempts/{attempt_id}/submit/')
+        self.assertEqual(sub_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(sub_resp.data['status'], 'SUBMITTED')
+
+        # Admin inspects results
+        self.client.force_authenticate(user=self.admin_user)
+        res_resp = self.client.get(f'/api/admin/results/?exam_id={self.coding_exam.id}')
+        self.assertEqual(res_resp.status_code, status.HTTP_200_OK)
+        results = res_resp.data['results'] if 'results' in res_resp.data else res_resp.data
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['exam_type'], 'CODING')
+        self.assertEqual(len(results[0]['submissions']), 1)
+        self.assertEqual(results[0]['submissions'][0]['file_name'], 'solution.cpp')
+        self.assertIsNotNone(results[0]['submissions'][0]['file_url'])
+
 
 

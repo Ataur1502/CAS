@@ -174,6 +174,17 @@ export const Dashboard: React.FC = () => {
                 className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between overflow-hidden"
               >
                 <div className="p-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    {exam.exam_type === 'CODING' ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                        💻 Practical Coding
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        📝 MCQ Quiz
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <h3 className="text-lg font-bold text-slate-900 leading-snug line-clamp-2">
                       {exam.title}

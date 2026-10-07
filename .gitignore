@@ -5,6 +5,7 @@ __pycache__/
 *.sqlite3
 *.sqlite3-journal
 staticfiles/
+media/
 *.log
 
 # Node / Vite

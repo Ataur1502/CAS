@@ -7,7 +7,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  FileCode
 } from 'lucide-react';
 
 export const AdminResults: React.FC = () => {
@@ -188,6 +189,7 @@ export const AdminResults: React.FC = () => {
                     <th scope="col" className="px-5 py-3.5">Student Name</th>
                     <th scope="col" className="px-5 py-3.5">Department</th>
                     <th scope="col" className="px-5 py-3.5">Examination</th>
+                    <th scope="col" className="px-5 py-3.5">Submitted Files</th>
                     <th scope="col" className="px-5 py-3.5 text-center">Score</th>
                     <th scope="col" className="px-5 py-3.5 text-center">Percentage</th>
                     <th scope="col" className="px-5 py-3.5 text-center">Status</th>
@@ -209,8 +211,45 @@ export const AdminResults: React.FC = () => {
                           {res.department_code}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-slate-800 max-w-xs truncate" title={res.exam_title}>
-                        {res.exam_title}
+                      <td className="px-5 py-4 text-slate-800 max-w-xs">
+                        <div className="font-medium text-slate-900 truncate" title={res.exam_title}>
+                          {res.exam_title}
+                        </div>
+                        <div className="mt-0.5">
+                          {res.exam_type === 'CODING' ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                              💻 Coding
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                              📝 MCQ
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {res.submissions && res.submissions.length > 0 ? (
+                          <div className="flex flex-col gap-1 text-xs">
+                            {res.submissions.map((sub, sIdx) => (
+                              <a
+                                key={sIdx}
+                                href={sub.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={sub.file_name}
+                                className="inline-flex items-center text-purple-700 hover:text-purple-900 font-medium underline"
+                                title={`Download ${sub.file_name} (${Math.round((sub.file_size || 0) / 1024)} KB)`}
+                              >
+                                <FileCode className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                                <span className="max-w-[120px] truncate">{sub.file_name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        ) : res.exam_type === 'CODING' ? (
+                          <span className="text-xs text-amber-700 font-medium italic">No files attached</span>
+                        ) : (
+                          <span className="text-xs text-slate-400">Online MCQ</span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-center font-bold text-slate-900">
                         {res.score} / {res.max_score}
@@ -230,13 +269,17 @@ export const AdminResults: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span
-                          className={`font-semibold text-xs ${
-                            res.violation_count > 0 ? 'text-red-600 font-bold' : 'text-slate-500'
-                          }`}
-                        >
-                          {res.violation_count}
-                        </span>
+                        {res.exam_type === 'CODING' ? (
+                          <span className="text-xs text-slate-400 font-medium">Bypassed</span>
+                        ) : (
+                          <span
+                            className={`font-semibold text-xs ${
+                              res.violation_count > 0 ? 'text-red-600 font-bold' : 'text-slate-500'
+                            }`}
+                          >
+                            {res.violation_count}
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-right text-xs text-slate-500 font-mono">
                         {formatDateTime(res.submitted_at)}

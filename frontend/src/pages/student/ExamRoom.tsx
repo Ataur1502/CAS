@@ -10,11 +10,21 @@ import {
   ChevronRight,
   Send,
   Maximize,
-  Minimize,
   ShieldAlert,
   ArrowLeft,
-  Info
+  Info,
+  Upload,
+  FileCode,
+  Code2,
+  Trash2,
+  Download
 } from 'lucide-react';
+
+interface FileAnswer {
+  file_name: string;
+  file_url: string | null;
+  file_size: number;
+}
 
 export const ExamRoom: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -36,10 +46,15 @@ export const ExamRoom: React.FC = () => {
 
   // Local answers cache: { [questionId]: selectedOptionId }
   const [answers, setAnswers] = useState<Record<number, number | null>>({});
+  const [fileAnswers, setFileAnswers] = useState<Record<number, FileAnswer | null>>({});
   const [savingAnswer, setSavingAnswer] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Integrity violation tracking
   const [violationCount, setViolationCount] = useState(0);
+  const maxViolations = attempt?.max_violations || 6;
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [autoSubmitReason, setAutoSubmitReason] = useState<string | null>(null);
@@ -64,14 +79,29 @@ export const ExamRoom: React.FC = () => {
       setRemainingSeconds(data.remaining_seconds);
       setViolationCount(data.violation_count);
 
-      // Restore saved answers
-      const restored: Record<number, number | null> = {};
+      // Restore saved answers (both MCQ and file uploads)
+      const restoredOptions: Record<number, number | null> = {};
+      const restoredFiles: Record<number, FileAnswer | null> = {};
       if (data.answers) {
-        Object.entries(data.answers).forEach(([qId, ans]) => {
-          restored[parseInt(qId, 10)] = ans.option_id;
+        Object.entries(data.answers).forEach(([qIdStr, ans]) => {
+          const qId = parseInt(qIdStr, 10);
+          restoredOptions[qId] = ans.option_id ?? null;
+          if (ans.file_name) {
+            restoredFiles[qId] = {
+              file_name: ans.file_name,
+              file_url: ans.file_url ?? null,
+              file_size: ans.file_size ?? 0,
+            };
+          }
         });
       }
-      setAnswers(restored);
+      setAnswers(restoredOptions);
+      setFileAnswers(restoredFiles);
+
+      // Coding exam does not require entering fullscreen
+      if (data.exam_type === 'CODING') {
+        setHasEnteredFullscreen(true);
+      }
 
       // Check if already completed
       if (data.status === 'SUBMITTED' || data.status === 'AUTO_SUBMITTED') {
@@ -127,7 +157,13 @@ export const ExamRoom: React.FC = () => {
   // 3. Violation handler with 1.5s cooldown
   const triggerViolation = useCallback(
     async (triggerName: string) => {
-      if (!attempt || attempt.status !== 'IN_PROGRESS' || isTerminatedRef.current || !hasEnteredFullscreen) {
+      if (
+        !attempt ||
+        attempt.status !== 'IN_PROGRESS' ||
+        isTerminatedRef.current ||
+        !hasEnteredFullscreen ||
+        attempt.exam_type === 'CODING'
+      ) {
         return;
       }
 
@@ -147,10 +183,10 @@ export const ExamRoom: React.FC = () => {
           setAutoSubmitReason('EXAM_INTEGRITY_VIOLATION');
           setWarningMessage(res.message);
         } else {
-          setWarningMessage(`Warning: Leaving the exam window has been detected (${triggerName}). This activity is recorded.`);
+          setWarningMessage(res.message || `Warning: Leaving the exam window has been detected (${triggerName}). This activity is recorded.`);
           setTimeout(() => {
             setWarningMessage(null);
-          }, 6000);
+          }, 7000);
         }
       } catch (err: any) {
         console.error('Failed to log violation:', err);
@@ -160,8 +196,15 @@ export const ExamRoom: React.FC = () => {
   );
 
   // 4. Attach Security Listeners (Visibility, Blur, Fullscreen exit, Right-click prevention)
+  // Completely bypassed for practical CODING examinations where students use local IDEs
   useEffect(() => {
-    if (!hasEnteredFullscreen || !attempt || attempt.status !== 'IN_PROGRESS' || isTerminatedRef.current) {
+    if (
+      !hasEnteredFullscreen ||
+      !attempt ||
+      attempt.status !== 'IN_PROGRESS' ||
+      isTerminatedRef.current ||
+      attempt.exam_type === 'CODING'
+    ) {
       return;
     }
 
@@ -224,15 +267,18 @@ export const ExamRoom: React.FC = () => {
     };
   }, []);
 
-  // Request fullscreen and begin exam
+  // Request fullscreen and begin exam (cross-browser)
   const enterExamFullscreen = async () => {
     try {
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      } else if ((document.documentElement as any).webkitRequestFullscreen) {
-        await (document.documentElement as any).webkitRequestFullscreen();
-      } else if ((document.documentElement as any).msRequestFullscreen) {
-        await (document.documentElement as any).msRequestFullscreen();
+      const docEl = document.documentElement as any;
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        await docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        await docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        await docEl.msRequestFullscreen();
       }
       setIsFullscreen(true);
     } catch (err) {
@@ -241,39 +287,13 @@ export const ExamRoom: React.FC = () => {
     setHasEnteredFullscreen(true);
   };
 
-  // Fullscreen button action handler
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        } else if ((document.documentElement as any).webkitRequestFullscreen) {
-          await (document.documentElement as any).webkitRequestFullscreen();
-        } else if ((document.documentElement as any).msRequestFullscreen) {
-          await (document.documentElement as any).msRequestFullscreen();
-        }
-        setIsFullscreen(true);
-      } else {
-        const confirmed = window.confirm(
-          'Warning: Exiting fullscreen mode will be recorded as an exam integrity violation. Are you sure you want to exit fullscreen?'
-        );
-        if (confirmed) {
-          if (document.exitFullscreen) {
-            await document.exitFullscreen();
-          } else if ((document as any).webkitExitFullscreen) {
-            await (document as any).webkitExitFullscreen();
-          } else if ((document as any).msExitFullscreen) {
-            await (document as any).msExitFullscreen();
-          }
-          setIsFullscreen(false);
-        }
-      }
-    } catch (err) {
-      console.warn('Fullscreen toggle failed:', err);
-    }
+  // Safe handler for Full Screen buttons:
+  // Immediately requests/restores fullscreen mode without prompting exit or penalty.
+  const handleFullscreenButtonClick = async () => {
+    await enterExamFullscreen();
   };
 
-  // 5. Select Option & Autosave
+  // 5. Select Option & Autosave (MCQ)
   const handleSelectOption = async (questionId: number, optionId: number) => {
     if (!attempt || attempt.status !== 'IN_PROGRESS' || isTerminatedRef.current) return;
 
@@ -294,6 +314,54 @@ export const ExamRoom: React.FC = () => {
       }
     } finally {
       setSavingAnswer(false);
+    }
+  };
+
+  // 5b. Upload Source Code File (Practical Coding)
+  const handleFileUpload = async (questionId: number, file: File) => {
+    if (!attempt || attempt.status !== 'IN_PROGRESS' || isTerminatedRef.current) return;
+    setUploadError(null);
+
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadError('File size exceeds the 15MB limit. Please upload a smaller file.');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const res = await api.uploadSourceFile(attempt.id, questionId, file);
+      setFileAnswers((prev) => ({
+        ...prev,
+        [questionId]: {
+          file_name: res.file_name,
+          file_url: res.file_url,
+          file_size: res.file_size,
+        },
+      }));
+    } catch (err: any) {
+      console.error('Error uploading source file:', err);
+      setUploadError(err.message || 'Failed to upload source file.');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveFile = async (questionId: number) => {
+    if (!attempt || attempt.status !== 'IN_PROGRESS' || isTerminatedRef.current) return;
+    if (!confirm('Are you sure you want to remove your uploaded file for this problem?')) return;
+    setUploadError(null);
+    setUploadingFile(true);
+    try {
+      await api.removeSourceFile(attempt.id, questionId);
+      setFileAnswers((prev) => ({
+        ...prev,
+        [questionId]: null,
+      }));
+    } catch (err: any) {
+      console.error('Error removing file:', err);
+      setUploadError(err.message || 'Failed to remove source file.');
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -364,8 +432,8 @@ export const ExamRoom: React.FC = () => {
     );
   }
 
-  // Gatekeeper: Fullscreen Prompt Modal
-  if (!hasEnteredFullscreen && attempt?.status === 'IN_PROGRESS' && !isTerminatedRef.current) {
+  // Gatekeeper: Fullscreen Prompt Modal (Bypassed for CODING exams)
+  if (!hasEnteredFullscreen && attempt?.status === 'IN_PROGRESS' && !isTerminatedRef.current && attempt?.exam_type !== 'CODING') {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-white max-w-lg w-full rounded-2xl shadow-2xl p-8 border border-slate-200">
@@ -383,7 +451,7 @@ export const ExamRoom: React.FC = () => {
             <ul className="list-disc pl-5 space-y-2 text-slate-700">
               <li>The exam will run in <strong>Fullscreen Mode</strong>.</li>
               <li>Leaving the exam window, switching tabs, or exiting fullscreen is recorded as a violation.</li>
-              <li>A maximum of <strong>3 violations</strong> is permitted. On the 3rd violation, your exam will be automatically submitted.</li>
+              <li>A maximum of <strong>{maxViolations} violations</strong> is permitted. On the {maxViolations}th violation, your exam will be automatically submitted.</li>
               <li>Your answers are autosaved in real-time to the university server.</li>
             </ul>
           </div>
@@ -421,9 +489,11 @@ export const ExamRoom: React.FC = () => {
 
           <p className="text-sm text-slate-600 mb-6">
             {autoSubmitReason === 'EXAM_INTEGRITY_VIOLATION' || attempt?.submission_reason === 'EXAM_INTEGRITY_VIOLATION'
-              ? 'Your exam was automatically submitted because the maximum number of integrity violations (3/3) was reached.'
+              ? `Your exam was automatically submitted because the maximum number of integrity violations (${attempt?.violation_count || violationCount}/${maxViolations}) was reached.`
               : autoSubmitReason === 'TIME_EXPIRED' || attempt?.submission_reason === 'TIME_EXPIRED'
               ? 'Your exam was automatically submitted because the exam time expired.'
+              : attempt?.exam_type === 'CODING'
+              ? 'Your source code submissions have been recorded and saved for evaluator review.'
               : 'Your responses have been recorded on the server.'}
           </p>
 
@@ -436,10 +506,19 @@ export const ExamRoom: React.FC = () => {
               <span className="text-slate-500">Status:</span>
               <span className="font-bold text-slate-800">{attempt?.status}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Violations Recorded:</span>
-              <span className="font-bold text-red-600">{attempt?.violation_count || violationCount} / 3</span>
-            </div>
+            {attempt?.exam_type === 'CODING' ? (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Exam Format:</span>
+                <span className="font-bold text-purple-700">Practical Coding Assessment</span>
+              </div>
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Violations Recorded:</span>
+                <span className={`font-bold ${(attempt?.violation_count || violationCount) >= maxViolations ? 'text-red-600' : 'text-slate-800'}`}>
+                  {attempt?.violation_count || violationCount} / {maxViolations}
+                </span>
+              </div>
+            )}
           </div>
 
           <button
@@ -453,8 +532,12 @@ export const ExamRoom: React.FC = () => {
     );
   }
 
+  const isCodingExam = attempt?.exam_type === 'CODING';
   const currentQuestion: Question | undefined = attempt?.questions[currentIndex];
-  const answeredCount = Object.values(answers).filter((v) => v !== null && v !== undefined).length;
+  const isCodingQuestion = isCodingExam || currentQuestion?.question_type === 'CODING';
+  const answeredCount = isCodingExam
+    ? Object.values(fileAnswers).filter((v) => Boolean(v?.file_name)).length
+    : Object.values(answers).filter((v) => v !== null && v !== undefined).length;
   const totalQuestions = attempt?.questions.length || 0;
 
   return (
@@ -471,42 +554,56 @@ export const ExamRoom: React.FC = () => {
           </div>
         </div>
 
-        {/* Violations, Fullscreen & Timer */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          {/* Violation Indicator */}
-          <div
-            className={`flex items-center px-3 py-1 rounded-md text-xs font-semibold ${
-              violationCount > 0 ? 'bg-red-950 text-red-300 border border-red-800' : 'bg-slate-800 text-slate-300'
-            }`}
-          >
-            <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-            Violations: {violationCount} / 3
-          </div>
+        {/* Violations / Mode, Fullscreen & Timer */}
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          {/* Mode Indicator or Violation Counter */}
+          {isCodingExam ? (
+            <div className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-800">
+              <Code2 className="h-3.5 w-3.5 mr-1.5 text-purple-400" />
+              <span>Mode: <strong>Local IDE Allowed</strong></span>
+            </div>
+          ) : (
+            <div
+              className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+                violationCount >= maxViolations - 1
+                  ? 'bg-red-950 text-red-300 border-red-700 animate-pulse'
+                  : violationCount > 0
+                  ? 'bg-amber-950 text-amber-300 border-amber-700'
+                  : 'bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+              title={`${Math.max(0, maxViolations - violationCount)} warnings remaining before auto-submission`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+              <span>Violations: <strong>{violationCount}</strong> / {maxViolations}</span>
+            </div>
+          )}
 
-          {/* Fullscreen Button */}
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition border ${
-              isFullscreen
-                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                : 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-amber-400 animate-pulse shadow-sm'
-            }`}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            aria-label="Toggle Fullscreen Mode"
-          >
-            {isFullscreen ? (
-              <>
-                <Minimize className="h-4 w-4 mr-1.5 text-sky-400" />
-                <span>Fullscreen</span>
-              </>
-            ) : (
-              <>
-                <Maximize className="h-4 w-4 mr-1.5" />
-                <span>Fullscreen</span>
-              </>
-            )}
-          </button>
+          {/* Full Screen Button in Header (MCQ exams only) */}
+          {!isCodingExam && (
+            <button
+              type="button"
+              onClick={handleFullscreenButtonClick}
+              className={`inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition border shadow-sm ${
+                isFullscreen
+                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-700 hover:bg-emerald-900'
+                  : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-amber-300 animate-pulse'
+              }`}
+              title={isFullscreen ? 'Full Screen mode is active' : 'Click to Enter Full Screen Mode'}
+              aria-label="Full Screen Mode"
+            >
+              {isFullscreen ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-400" />
+                  <span>Full Screen Active</span>
+                </>
+              ) : (
+                <>
+                  <Maximize className="h-4 w-4 mr-1.5 text-slate-950" />
+                  <span>Enter Full Screen</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Countdown Clock */}
           <div
@@ -529,16 +626,16 @@ export const ExamRoom: React.FC = () => {
         </div>
       </header>
 
-      {/* Violation Alert Banner */}
-      {warningMessage && (
-        <div className="bg-red-600 text-white px-6 py-2 text-sm font-semibold flex items-center justify-center space-x-3 animate-bounce">
+      {/* Violation Alert Banner (MCQ only) */}
+      {!isCodingExam && warningMessage && (
+        <div className="bg-red-600 text-white px-6 py-2.5 text-sm font-semibold flex items-center justify-center space-x-3 shadow-md animate-bounce">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>{warningMessage}</span>
           {!isFullscreen && (
             <button
               type="button"
-              onClick={toggleFullscreen}
-              className="ml-2 px-3 py-1 bg-white text-red-700 font-bold text-xs rounded-md shadow hover:bg-red-50 transition inline-flex items-center"
+              onClick={handleFullscreenButtonClick}
+              className="ml-2 px-3.5 py-1 bg-white hover:bg-red-50 text-red-700 font-bold text-xs rounded-md shadow transition inline-flex items-center"
             >
               <Maximize className="h-3.5 w-3.5 mr-1" /> Re-enter Fullscreen
             </button>
@@ -546,19 +643,19 @@ export const ExamRoom: React.FC = () => {
         </div>
       )}
 
-      {/* Non-Fullscreen Warning Strip */}
-      {!isFullscreen && hasEnteredFullscreen && !isTerminatedRef.current && (
-        <div className="bg-amber-500 text-slate-950 px-6 py-2 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-sm border-b border-amber-600">
+      {/* Non-Fullscreen Warning Strip (MCQ only) */}
+      {!isCodingExam && !isFullscreen && hasEnteredFullscreen && (
+        <div className="bg-amber-500 text-slate-950 px-6 py-2.5 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-md border-b-2 border-amber-600 sticky top-0 z-30">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-4 w-4 text-slate-950 flex-shrink-0" />
-            <span>You are currently not in fullscreen mode. Fullscreen is required for this examination.</span>
+            <AlertTriangle className="h-4 w-4 text-slate-950 flex-shrink-0 animate-bounce" />
+            <span>You are currently not in Full Screen mode. Full Screen is required for examination integrity.</span>
           </div>
           <button
             type="button"
-            onClick={toggleFullscreen}
-            className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md transition inline-flex items-center shadow"
+            onClick={handleFullscreenButtonClick}
+            className="ml-4 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-lg transition inline-flex items-center shadow flex-shrink-0"
           >
-            <Maximize className="h-3.5 w-3.5 mr-1" /> Return to Fullscreen
+            <Maximize className="h-4 w-4 mr-1.5 text-amber-400" /> Enter Full Screen Now
           </button>
         </div>
       )}
@@ -571,54 +668,188 @@ export const ExamRoom: React.FC = () => {
             <div>
               {/* Question Header */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                <div>
+                <div className="flex items-center space-x-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-sky-700 bg-sky-50 px-2.5 py-1 rounded-md">
-                    Question {currentIndex + 1} of {totalQuestions}
+                    Problem {currentIndex + 1} of {totalQuestions}
                   </span>
-                  <span className="ml-3 text-xs text-slate-500 font-medium">
+                  {currentQuestion.category && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                      {currentQuestion.category}
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-500 font-medium">
                     Marks: <strong className="text-slate-800">{currentQuestion.marks}</strong>
                   </span>
                 </div>
-                {savingAnswer && (
-                  <span className="text-xs text-slate-400 italic">Autosaving answer...</span>
-                )}
+                <div>
+                  {savingAnswer && (
+                    <span className="text-xs text-slate-400 italic">Autosaving answer...</span>
+                  )}
+                  {uploadingFile && (
+                    <span className="text-xs text-purple-600 font-medium flex items-center">
+                      <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mr-1.5"></div>
+                      Uploading file...
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Question Text */}
-              <div className="text-lg font-medium text-slate-900 mb-8 leading-relaxed">
+              <div className="text-base text-slate-900 mb-6 leading-relaxed whitespace-pre-wrap font-sans">
                 {currentQuestion.question_text}
               </div>
 
-              {/* Options List */}
-              <div className="space-y-3.5">
-                {currentQuestion.options.map((opt) => {
-                  const isSelected = answers[currentQuestion.id] === opt.id;
-                  return (
-                    <div
-                      key={opt.id}
-                      onClick={() => opt.id && handleSelectOption(currentQuestion.id, opt.id)}
-                      className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition ${
-                        isSelected
-                          ? 'border-sky-600 bg-sky-50/50 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div
-                        className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-sm mr-4 transition ${
-                          isSelected
-                            ? 'bg-sky-700 text-white'
-                            : 'bg-slate-100 text-slate-600 border border-slate-300'
-                        }`}
-                      >
-                        {opt.option_key}
-                      </div>
-                      <div className="text-sm font-medium text-slate-800 flex-1">
-                        {opt.option_text}
+              {/* Question Content: Coding File Upload OR MCQ Options */}
+              {isCodingQuestion ? (
+                <div className="space-y-6 pt-4 border-t border-slate-100">
+                  {/* Instructions banner */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-700 flex items-start space-x-3">
+                    <Code2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-900 block font-semibold mb-0.5">
+                        Local IDE Instructions:
+                      </strong>
+                      <p className="text-slate-600 leading-relaxed text-xs">
+                        Open your local IDE (VS Code, IntelliJ, PyCharm, CLion, or terminal) to implement and test your solution. You may use any programming language (Python, Java, C++, C, JavaScript, Go, etc.). Once tested and verified, upload your source code file below.
+                      </p>
+                    </div>
+                  </div>
+
+                  {uploadError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0 text-red-500" />
+                      {uploadError}
+                    </div>
+                  )}
+
+                  {fileAnswers[currentQuestion.id]?.file_name ? (
+                    <div className="border-2 border-emerald-200 bg-emerald-50/40 rounded-2xl p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-12 w-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                            <FileCode className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-slate-900 text-sm sm:text-base font-mono">
+                                {fileAnswers[currentQuestion.id]?.file_name}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Uploaded & Saved
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                              File size: {((fileAnswers[currentQuestion.id]!.file_size || 0) / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          {fileAnswers[currentQuestion.id]?.file_url && (
+                            <a
+                              href={fileAnswers[currentQuestion.id]!.file_url!}
+                              download={fileAnswers[currentQuestion.id]!.file_name}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition inline-flex items-center"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" /> View / Download
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-xs font-semibold shadow-sm transition inline-flex items-center disabled:opacity-50"
+                          >
+                            <Upload className="h-3.5 w-3.5 mr-1" /> Replace File
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(currentQuestion.id)}
+                            disabled={uploadingFile}
+                            className="px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition inline-flex items-center disabled:opacity-50"
+                            title="Remove File"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ) : (
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleFileUpload(currentQuestion.id, e.dataTransfer.files[0]);
+                        }
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-purple-500 hover:bg-purple-50/20 rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center group"
+                    >
+                      <div className="h-14 w-14 rounded-2xl bg-purple-50 text-purple-600 group-hover:bg-purple-100 group-hover:scale-105 transition flex items-center justify-center mb-3">
+                        <Upload className="h-7 w-7" />
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-purple-700">
+                        Upload Solution Source File
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                        Drag & drop your code file here, or click to browse from your computer.
+                        <br />
+                        Accepted: <span className="font-mono text-slate-700">.py, .java, .cpp, .c, .js, .ts, .cs, .go, .rs, .txt</span>
+                      </p>
+                      <span className="inline-flex items-center mt-3 text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                        Maximum file size: 15 MB
+                      </span>
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".py,.java,.cpp,.c,.cc,.cxx,.h,.hpp,.js,.jsx,.ts,.tsx,.cs,.go,.rs,.php,.rb,.swift,.kt,.txt"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileUpload(currentQuestion.id, e.target.files[0]);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                /* Options List for MCQ */
+                <div className="space-y-3.5">
+                  {currentQuestion.options.map((opt) => {
+                    const isSelected = answers[currentQuestion.id] === opt.id;
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() => opt.id && handleSelectOption(currentQuestion.id, opt.id)}
+                        className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition ${
+                          isSelected
+                            ? 'border-sky-600 bg-sky-50/50 shadow-sm'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div
+                          className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-sm mr-4 transition ${
+                            isSelected
+                              ? 'bg-sky-700 text-white'
+                              : 'bg-slate-100 text-slate-600 border border-slate-300'
+                          }`}
+                        >
+                          {opt.option_key}
+                        </div>
+                        <div className="text-sm font-medium text-slate-800 flex-1">
+                          {opt.option_text}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-20 text-slate-500">No questions found.</div>
@@ -634,23 +865,32 @@ export const ExamRoom: React.FC = () => {
               <ChevronLeft className="h-4 w-4 mr-1" /> Previous
             </button>
 
-            <div className="flex items-center space-x-3">
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                className="hidden sm:inline-flex items-center px-3.5 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-              >
-                {isFullscreen ? (
-                  <>
-                    <Minimize className="h-4 w-4 mr-1.5 text-slate-500" /> Fullscreen
-                  </>
-                ) : (
-                  <>
-                    <Maximize className="h-4 w-4 mr-1.5 text-amber-600" /> Fullscreen
-                  </>
-                )}
-              </button>
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              {/* Full Screen Button in exam workspace (MCQ only) */}
+              {!isCodingExam && (
+                <button
+                  type="button"
+                  onClick={handleFullscreenButtonClick}
+                  className={`inline-flex items-center px-3.5 py-2 rounded-lg border text-xs sm:text-sm font-semibold transition ${
+                    isFullscreen
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                      : 'border-amber-400 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold animate-pulse shadow-sm'
+                  }`}
+                  title={isFullscreen ? 'Full Screen is currently active' : 'Click to enter full screen'}
+                >
+                  {isFullscreen ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-600" />
+                      <span>Full Screen: Active</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize className="h-4 w-4 mr-1.5" />
+                      <span>Enter Full Screen</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <button
                 onClick={() => {
@@ -661,7 +901,7 @@ export const ExamRoom: React.FC = () => {
                 disabled={currentIndex === totalQuestions - 1}
                 className="inline-flex items-center px-5 py-2 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                Save & Next <ChevronRight className="h-4 w-4 ml-1" />
+                Next <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
           </div>
@@ -671,14 +911,14 @@ export const ExamRoom: React.FC = () => {
         <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
           <div>
             <h4 className="text-sm font-bold text-slate-900 tracking-wide uppercase mb-4">
-              Question Palette
+              {isCodingExam ? 'Problem Palette' : 'Question Palette'}
             </h4>
 
             {/* Status Legend */}
             <div className="grid grid-cols-2 gap-2 text-xs mb-6 p-3 bg-slate-50 rounded-xl border border-slate-100">
               <div className="flex items-center space-x-2">
                 <span className="w-3.5 h-3.5 rounded bg-emerald-500 block"></span>
-                <span className="text-slate-600">Answered ({answeredCount})</span>
+                <span className="text-slate-600">{isCodingExam ? 'Uploaded' : 'Answered'} ({answeredCount})</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300 block"></span>
@@ -690,7 +930,9 @@ export const ExamRoom: React.FC = () => {
             <div className="grid grid-cols-5 gap-2.5">
               {attempt?.questions.map((q, idx) => {
                 const isCurrent = idx === currentIndex;
-                const isAnswered = answers[q.id] !== null && answers[q.id] !== undefined;
+                const isAnswered = isCodingExam
+                  ? Boolean(fileAnswers[q.id]?.file_name)
+                  : answers[q.id] !== null && answers[q.id] !== undefined;
 
                 return (
                   <button
@@ -718,7 +960,7 @@ export const ExamRoom: React.FC = () => {
               onClick={() => setShowSubmitModal(true)}
               className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition flex items-center justify-center"
             >
-              <Send className="h-4 w-4 mr-2" /> Submit Final Answers
+              <Send className="h-4 w-4 mr-2" /> {isCodingExam ? 'Submit Solutions' : 'Submit Final Answers'}
             </button>
           </div>
         </div>
@@ -730,11 +972,12 @@ export const ExamRoom: React.FC = () => {
           <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-2">Submit Examination?</h3>
             <p className="text-sm text-slate-600 mb-4">
-              You have answered <strong>{answeredCount}</strong> out of <strong>{totalQuestions}</strong> questions.
+              You have {isCodingExam ? 'uploaded solutions for' : 'answered'}{' '}
+              <strong>{answeredCount}</strong> out of <strong>{totalQuestions}</strong> {isCodingExam ? 'problems' : 'questions'}.
             </p>
             <p className="text-xs text-amber-800 bg-amber-50 p-3 rounded-lg border border-amber-200 mb-6 flex items-start">
               <Info className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-              Once submitted, your answers will be locked and cannot be modified.
+              Once submitted, your examination attempt will be finalized and locked.
             </p>
 
             <div className="flex space-x-3">
@@ -755,6 +998,19 @@ export const ExamRoom: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Floating Quick-Action Full Screen button when not in fullscreen (MCQ only) */}
+      {!isCodingExam && !isFullscreen && hasEnteredFullscreen && (
+        <button
+          type="button"
+          onClick={handleFullscreenButtonClick}
+          className="fixed bottom-6 right-6 z-40 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-3.5 rounded-full shadow-2xl border-2 border-amber-300 animate-pulse flex items-center space-x-2 transition"
+          title="Click to restore full screen immediately"
+        >
+          <Maximize className="h-5 w-5" />
+          <span className="text-sm font-extrabold tracking-wide">Enter Full Screen</span>
+        </button>
       )}
     </div>
   );

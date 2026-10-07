@@ -55,6 +55,11 @@ def calculate_attempt_score(attempt):
 
     max_score = sum(q.marks for q in questions)
 
+    if getattr(attempt.exam, 'exam_type', 'MCQ') == 'CODING':
+        score = attempt.score or 0.0
+        percentage = round((score / max_score * 100), 2) if max_score > 0 else 0.0
+        return float(score), float(max_score), percentage
+
     answers = {
         ans.question_id: ans.selected_option
         for ans in attempt.answers.select_related('selected_option').all()
@@ -412,19 +417,26 @@ def student_save_answer(request, attempt_id):
 
     question_id = request.data.get('question_id')
     option_id = request.data.get('option_id')
+    uploaded_file = request.FILES.get('file') or request.FILES.get('source_file')
+    remove_file = request.data.get('remove_file') in ['true', '1', True]
 
     if not question_id:
         return Response({"error": "question_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        q_id_int = int(question_id)
+    except (ValueError, TypeError):
+        return Response({"error": "Invalid question_id format."}, status=status.HTTP_400_BAD_REQUEST)
+
     # Verify question is assigned to this attempt
     if attempt.attempt_questions.exists():
-        if not attempt.attempt_questions.filter(question_id=question_id).exists():
+        if not attempt.attempt_questions.filter(question_id=q_id_int).exists():
             return Response(
                 {"error": "This question was not assigned to your exam attempt."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
     else:
-        if not ExamQuestion.objects.filter(exam=attempt.exam, question_id=question_id).exists():
+        if not ExamQuestion.objects.filter(exam=attempt.exam, question_id=q_id_int).exists():
             return Response(
                 {"error": "Question is not part of this exam."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -433,21 +445,39 @@ def student_save_answer(request, attempt_id):
     selected_option = None
     if option_id:
         try:
-            selected_option = Option.objects.get(id=option_id, question_id=question_id)
+            selected_option = Option.objects.get(id=option_id, question_id=q_id_int)
         except Option.DoesNotExist:
             return Response({"error": "Invalid option selected."}, status=status.HTTP_400_BAD_REQUEST)
 
+    defaults = {}
+    if option_id is not None:
+        defaults['selected_option'] = selected_option
+
+    if uploaded_file:
+        if uploaded_file.size > 15 * 1024 * 1024:
+            return Response({"error": "File size exceeds 15MB limit."}, status=status.HTTP_400_BAD_REQUEST)
+        defaults['uploaded_file'] = uploaded_file
+        defaults['file_name'] = uploaded_file.name
+        defaults['file_size'] = uploaded_file.size
+    elif remove_file:
+        defaults['uploaded_file'] = None
+        defaults['file_name'] = ''
+        defaults['file_size'] = 0
+
     answer, _ = StudentAnswer.objects.update_or_create(
         attempt=attempt,
-        question_id=question_id,
-        defaults={'selected_option': selected_option}
+        question_id=q_id_int,
+        defaults=defaults
     )
 
     return Response({
         'success': True,
-        'question_id': question_id,
-        'selected_option_id': selected_option.id if selected_option else None,
-        'selected_option_key': selected_option.option_key if selected_option else None,
+        'question_id': q_id_int,
+        'selected_option_id': answer.selected_option_id,
+        'selected_option_key': answer.selected_option.option_key if answer.selected_option else None,
+        'file_name': answer.file_name,
+        'file_url': answer.uploaded_file.url if answer.uploaded_file else None,
+        'file_size': answer.file_size,
         'answered_at': answer.answered_at,
     })
 
@@ -498,7 +528,8 @@ def student_record_violation(request, attempt_id):
     """
     Records an integrity violation (window blur, tab switch, or fullscreen exit).
     Backend increments authoritative violation_count.
-    After 3 violations, the exam is automatically submitted.
+    When violation_count reaches exam.max_violations (default 6, supporting 5-7 with leniency),
+    the exam is automatically submitted.
     """
     student = request.user.student_profile
     try:
@@ -509,14 +540,24 @@ def student_record_violation(request, attempt_id):
     if attempt.status != 'IN_PROGRESS':
         return Response({"error": "Exam is not in progress."}, status=status.HTTP_400_BAD_REQUEST)
 
+    if attempt.exam.exam_type == 'CODING':
+        return Response({
+            'violation_count': 0,
+            'max_violations': 0,
+            'remaining_violations': 999,
+            'auto_submitted': False,
+            'message': 'Integrity violation tracking is disabled for practical coding examinations.',
+        })
+
     with transaction.atomic():
         locked_attempt = ExamAttempt.objects.select_for_update().get(id=attempt.id)
         if locked_attempt.status != 'IN_PROGRESS':
             return Response({"error": "Exam is not in progress."}, status=status.HTTP_400_BAD_REQUEST)
 
+        max_allowed = getattr(locked_attempt.exam, 'max_violations', 6) or 6
         locked_attempt.violation_count += 1
 
-        if locked_attempt.violation_count >= 3:
+        if locked_attempt.violation_count >= max_allowed:
             score, max_score, percentage = calculate_attempt_score(locked_attempt)
             locked_attempt.score = score
             locked_attempt.max_score = max_score
@@ -528,16 +569,25 @@ def student_record_violation(request, attempt_id):
 
             return Response({
                 'violation_count': locked_attempt.violation_count,
+                'max_violations': max_allowed,
                 'auto_submitted': True,
                 'status': 'AUTO_SUBMITTED',
-                'message': 'Your exam was automatically submitted because the maximum number of integrity violations was reached.',
+                'message': f'Your exam was automatically submitted because the maximum number of integrity violations ({max_allowed}/{max_allowed}) was reached.',
             })
         else:
             locked_attempt.save(update_fields=['violation_count'])
+            remaining = max_allowed - locked_attempt.violation_count
+            warning_msg = (
+                f'FINAL WARNING ({locked_attempt.violation_count}/{max_allowed}): The next violation will automatically submit your exam!'
+                if remaining == 1
+                else f'Warning ({locked_attempt.violation_count}/{max_allowed}): Leaving the exam window has been detected. {remaining} warning{"s" if remaining > 1 else ""} remaining before automatic submission.'
+            )
             return Response({
                 'violation_count': locked_attempt.violation_count,
+                'max_violations': max_allowed,
+                'remaining_violations': remaining,
                 'auto_submitted': False,
-                'message': 'Warning: Leaving the exam window has been detected. This activity is recorded.',
+                'message': warning_msg,
             })
 
 
@@ -715,6 +765,7 @@ def admin_results_view(request):
             'Student Name',
             'Department',
             'Exam Title',
+            'Exam Type',
             'Score',
             'Max Marks',
             'Percentage (%)',
@@ -730,6 +781,7 @@ def admin_results_view(request):
                 att.student.full_name,
                 att.student.department.name,
                 att.exam.title,
+                att.exam.exam_type,
                 att.score,
                 att.max_score,
                 f"{att.percentage}%",

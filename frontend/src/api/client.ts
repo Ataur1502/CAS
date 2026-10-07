@@ -31,6 +31,8 @@ export interface Option {
 
 export interface Question {
   id: number;
+  source_id?: string;
+  question_type?: 'MCQ' | 'CODING';
   question_text: string;
   marks: number;
   category?: string;
@@ -45,6 +47,7 @@ export interface ExamCard {
   id: number;
   title: string;
   description: string;
+  exam_type?: 'MCQ' | 'CODING';
   duration_minutes: number;
   start_datetime: string;
   end_datetime: string;
@@ -58,6 +61,7 @@ export interface ExamCard {
   question_count: number;
   question_pool_size?: number;
   questions_per_attempt?: number;
+  max_violations?: number;
   total_marks: number;
 }
 
@@ -66,7 +70,9 @@ export interface ExamAttemptDetail {
   exam_id: number;
   exam_title: string;
   exam_description: string;
+  exam_type?: 'MCQ' | 'CODING';
   duration_minutes: number;
+  max_violations?: number;
   end_datetime: string;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
   started_at: string;
@@ -78,7 +84,13 @@ export interface ExamAttemptDetail {
   submission_reason: string;
   remaining_seconds: number;
   questions: Question[];
-  answers: Record<number, { option_id: number | null; option_key: string | null }>;
+  answers: Record<number, {
+    option_id?: number | null;
+    option_key?: string | null;
+    file_name?: string | null;
+    file_url?: string | null;
+    file_size?: number | null;
+  }>;
   server_time: string;
 }
 
@@ -90,12 +102,20 @@ export interface ExamResult {
   department_code: string;
   exam_id: number;
   exam_title: string;
+  exam_type?: 'MCQ' | 'CODING';
   score: number;
   max_score: number;
   percentage: number;
   status: string;
   violation_count: number;
   submission_reason: string;
+  submissions?: Array<{
+    question_id: number;
+    file_name: string;
+    file_url: string;
+    file_size: number;
+    answered_at: string;
+  }>;
   started_at: string;
   submitted_at: string;
 }
@@ -192,6 +212,33 @@ export const api = {
       }
     ),
 
+  uploadSourceFile: (attemptId: number, questionId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('question_id', questionId.toString());
+    formData.append('file', file);
+    return apiRequest<{
+      success: boolean;
+      question_id: number;
+      file_name: string;
+      file_url: string;
+      file_size: number;
+    }>(`/attempts/${attemptId}/answers/`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  removeSourceFile: (attemptId: number, questionId: number) =>
+    apiRequest<{
+      success: boolean;
+      question_id: number;
+      file_name: string;
+      file_url: null;
+    }>(`/attempts/${attemptId}/answers/`, {
+      method: 'POST',
+      body: JSON.stringify({ question_id: questionId, remove_file: true }),
+    }),
+
   submitExam: (attemptId: number) =>
     apiRequest<{
       success: boolean;
@@ -207,6 +254,8 @@ export const api = {
   recordViolation: (attemptId: number) =>
     apiRequest<{
       violation_count: number;
+      max_violations?: number;
+      remaining_violations?: number;
       auto_submitted: boolean;
       status?: string;
       message: string;

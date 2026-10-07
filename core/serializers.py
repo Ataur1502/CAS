@@ -63,7 +63,7 @@ class StudentQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'question_text', 'marks', 'category', 'difficulty', 'options', 'order']
+        fields = ['id', 'source_id', 'question_type', 'question_text', 'marks', 'category', 'difficulty', 'options', 'order']
 
     def get_options(self, obj):
         options = obj.options.all().order_by('option_key')
@@ -79,13 +79,14 @@ class AdminOptionSerializer(serializers.ModelSerializer):
 
 
 class AdminQuestionSerializer(serializers.ModelSerializer):
-    options = AdminOptionSerializer(many=True)
+    options = AdminOptionSerializer(many=True, required=False)
 
     class Meta:
         model = Question
         fields = [
             'id',
             'source_id',
+            'question_type',
             'question_text',
             'marks',
             'category',
@@ -97,19 +98,28 @@ class AdminQuestionSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
 
-    def validate_options(self, options_data):
-        if len(options_data) != 4:
-            raise serializers.ValidationError("Each question must have exactly 4 options (A, B, C, D).")
-        keys = set(opt.get('option_key', '').upper() for opt in options_data)
-        if keys != {'A', 'B', 'C', 'D'}:
-            raise serializers.ValidationError("Options must correspond to keys A, B, C, and D.")
-        correct_count = sum(1 for opt in options_data if opt.get('is_correct', False))
-        if correct_count != 1:
-            raise serializers.ValidationError("Exactly one option must be marked as correct.")
-        return options_data
+    def validate(self, data):
+        q_type = data.get('question_type', self.instance.question_type if self.instance else 'MCQ')
+        options_data = data.get('options', None)
+
+        if options_data is None:
+            if not self.instance and q_type == 'MCQ':
+                raise serializers.ValidationError({"options": "Each MCQ question must have exactly 4 options (A, B, C, D)."})
+            return data
+
+        if q_type == 'MCQ':
+            if len(options_data) != 4:
+                raise serializers.ValidationError({"options": "Each MCQ question must have exactly 4 options (A, B, C, D)."})
+            keys = set(opt.get('option_key', '').upper() for opt in options_data)
+            if keys != {'A', 'B', 'C', 'D'}:
+                raise serializers.ValidationError({"options": "Options must correspond to keys A, B, C, and D."})
+            correct_count = sum(1 for opt in options_data if opt.get('is_correct', False))
+            if correct_count != 1:
+                raise serializers.ValidationError({"options": "Exactly one option must be marked as correct."})
+        return data
 
     def create(self, validated_data):
-        options_data = validated_data.pop('options')
+        options_data = validated_data.pop('options', [])
         question = Question.objects.create(**validated_data)
         for opt_data in options_data:
             opt_data.pop('id', None)
@@ -162,8 +172,10 @@ class AdminExamSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'description',
+            'exam_type',
             'duration_minutes',
             'questions_per_attempt',
+            'max_violations',
             'start_datetime',
             'end_datetime',
             'is_active',
@@ -270,7 +282,9 @@ class StudentExamCardSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'description',
+            'exam_type',
             'duration_minutes',
+            'max_violations',
             'start_datetime',
             'end_datetime',
             'status',
@@ -375,7 +389,9 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     exam_description = serializers.CharField(source='exam.description', read_only=True)
     duration_minutes = serializers.IntegerField(source='exam.duration_minutes', read_only=True)
+    exam_type = serializers.CharField(source='exam.exam_type', read_only=True)
     end_datetime = serializers.DateTimeField(source='exam.end_datetime', read_only=True)
+    max_violations = serializers.SerializerMethodField()
     remaining_seconds = serializers.SerializerMethodField()
     questions = serializers.SerializerMethodField()
     answers = serializers.SerializerMethodField()
@@ -391,7 +407,9 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
             'exam_id',
             'exam_title',
             'exam_description',
+            'exam_type',
             'duration_minutes',
+            'max_violations',
             'end_datetime',
             'status',
             'started_at',
@@ -408,6 +426,9 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
             'answers',
             'server_time',
         ]
+
+    def get_max_violations(self, obj):
+        return getattr(obj.exam, 'max_violations', 6) or 6
 
     def get_server_time(self, obj):
         return timezone.now()
@@ -466,6 +487,10 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
             ans.question_id: {
                 'option_id': ans.selected_option_id,
                 'option_key': ans.selected_option.option_key if ans.selected_option else None,
+                'file_name': ans.file_name,
+                'file_url': ans.uploaded_file.url if ans.uploaded_file else None,
+                'file_size': ans.file_size,
+                'answered_at': ans.answered_at,
             }
             for ans in answers
         }
@@ -482,6 +507,8 @@ class ResultSerializer(serializers.ModelSerializer):
     department_code = serializers.CharField(source='student.department.code', read_only=True)
     exam_id = serializers.IntegerField(source='exam.id', read_only=True)
     exam_title = serializers.CharField(source='exam.title', read_only=True)
+    exam_type = serializers.CharField(source='exam.exam_type', read_only=True)
+    submissions = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamAttempt
@@ -493,6 +520,7 @@ class ResultSerializer(serializers.ModelSerializer):
             'department_code',
             'exam_id',
             'exam_title',
+            'exam_type',
             'score',
             'max_score',
             'percentage',
@@ -501,4 +529,18 @@ class ResultSerializer(serializers.ModelSerializer):
             'submission_reason',
             'started_at',
             'submitted_at',
+            'submissions',
+        ]
+
+    def get_submissions(self, obj):
+        answers = obj.answers.select_related('question').all()
+        return [
+            {
+                'question_id': a.question_id,
+                'question_text': a.question.question_text[:80],
+                'file_name': a.file_name,
+                'file_url': a.uploaded_file.url if a.uploaded_file else None,
+                'file_size': a.file_size,
+            }
+            for a in answers if a.uploaded_file or a.file_name
         ]

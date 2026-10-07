@@ -8,6 +8,7 @@ import os
 urlpatterns = [
     path('django-admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
 
 # Static files route (e.g. for Django admin when served via Gunicorn)

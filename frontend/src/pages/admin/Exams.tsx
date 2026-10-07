@@ -17,8 +17,10 @@ interface ExamItem {
   id: number;
   title: string;
   description: string;
+  exam_type?: 'MCQ' | 'CODING';
   duration_minutes: number;
   questions_per_attempt: number;
+  max_violations?: number;
   question_pool_size?: number;
   start_datetime: string;
   end_datetime: string;
@@ -45,8 +47,10 @@ export const Exams: React.FC = () => {
   // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [examType, setExamType] = useState<'MCQ' | 'CODING'>('MCQ');
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [questionsPerAttempt, setQuestionsPerAttempt] = useState(30);
+  const [maxViolations, setMaxViolations] = useState(6);
   const [startDatetime, setStartDatetime] = useState('');
   const [endDatetime, setEndDatetime] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -80,8 +84,10 @@ export const Exams: React.FC = () => {
     setEditingExam(null);
     setTitle('');
     setDescription('');
+    setExamType('MCQ');
     setDurationMinutes(30);
     setQuestionsPerAttempt(30);
+    setMaxViolations(6);
 
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -103,8 +109,10 @@ export const Exams: React.FC = () => {
     setEditingExam(exam);
     setTitle(exam.title);
     setDescription(exam.description);
+    setExamType(exam.exam_type || 'MCQ');
     setDurationMinutes(exam.duration_minutes);
     setQuestionsPerAttempt(exam.questions_per_attempt || 30);
+    setMaxViolations(exam.max_violations || 6);
 
     const toLocalISO = (isoStr: string) => {
       const d = new Date(isoStr);
@@ -177,8 +185,10 @@ export const Exams: React.FC = () => {
     const payload = {
       title: title.trim(),
       description: description.trim(),
+      exam_type: examType,
       duration_minutes: durationMinutes,
       questions_per_attempt: questionsPerAttempt,
+      max_violations: maxViolations,
       start_datetime: start.toISOString(),
       end_datetime: end.toISOString(),
       is_active: isActive,
@@ -261,6 +271,17 @@ export const Exams: React.FC = () => {
                 className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between hover:shadow-md transition"
               >
                 <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    {exam.exam_type === 'CODING' ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                        💻 Practical Coding
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        📝 MCQ Quiz
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <h3 className="text-base font-bold text-slate-900 leading-snug line-clamp-2">
                       {exam.title}
@@ -322,7 +343,7 @@ export const Exams: React.FC = () => {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
                   <span className="text-slate-700">
-                    Pool: {exam.question_pool_size || exam.question_count} Qs | {exam.questions_per_attempt || 30} per student | {exam.total_marks} Marks
+                    Pool: {exam.question_pool_size || exam.question_count} Qs | {exam.questions_per_attempt || 30} per student | Max Violations: {exam.max_violations || 6} | {exam.total_marks} Marks
                   </span>
                   <span className={exam.is_active ? 'text-emerald-600' : 'text-slate-400'}>
                     {exam.is_active ? 'Active' : 'Inactive'}
@@ -384,7 +405,24 @@ export const Exams: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                      Exam Type
+                    </label>
+                    <select
+                      value={examType}
+                      onChange={(e) => setExamType(e.target.value as 'MCQ' | 'CODING')}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 bg-white"
+                    >
+                      <option value="MCQ">📝 MCQ Quiz</option>
+                      <option value="CODING">💻 Practical Coding (File Upload)</option>
+                    </select>
+                    <span className="text-[10px] text-slate-500">
+                      {examType === 'CODING' ? 'Local IDE allowed, source file upload' : 'Online MCQ test with violation tracking'}
+                    </span>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
                       Duration (Mins)
@@ -413,6 +451,26 @@ export const Exams: React.FC = () => {
                       onChange={(e) => setQuestionsPerAttempt(parseInt(e.target.value, 10))}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                     />
+                    <span className="text-[10px] text-slate-400">Randomly selected from pool</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1" title="Violations allowed before automatic submission">
+                      Max Violations
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      required
+                      disabled={examType === 'CODING'}
+                      value={examType === 'CODING' ? 0 : maxViolations}
+                      onChange={(e) => setMaxViolations(parseInt(e.target.value, 10) || 6)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 disabled:bg-slate-100 disabled:text-slate-400"
+                    />
+                    <span className="text-[10px] text-slate-400">
+                      {examType === 'CODING' ? 'Disabled for coding' : '5–7 strikes (lenient)'}
+                    </span>
                   </div>
 
                   <div>

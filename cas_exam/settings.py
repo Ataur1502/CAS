@@ -90,6 +90,9 @@ STATICFILES_DIRS = []
 if (BASE_DIR / 'frontend' / 'dist').exists():
     STATICFILES_DIRS.append(BASE_DIR / 'frontend' / 'dist')
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework Configuration
