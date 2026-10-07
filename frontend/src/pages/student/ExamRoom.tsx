@@ -609,13 +609,6 @@ export const ExamRoom: React.FC = () => {
                   <p className="text-xs text-slate-500 italic">No questions found.</p>
                 )}
               </div>
-
-              <div className="mt-2.5 text-[11px] text-slate-500 bg-purple-50/50 p-2.5 rounded-lg border border-purple-100 flex items-center">
-                <span className="mr-1.5">📁</span>
-                <span>
-                  <strong>Server Location:</strong> Submissions are organized into <code>media/&lt;question_number&gt;/&lt;roll_number&gt;/&lt;file&gt;</code>.
-                </span>
-              </div>
             </div>
           )}
 
