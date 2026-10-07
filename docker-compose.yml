@@ -12,9 +12,9 @@ services:
       - DEBUG=False
       - SQLITE_DIR=/app/data
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-cas-exam-production-secret-key-301students}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-      - STUDENT_PASSWORD=${STUDENT_PASSWORD:-}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-Atlee}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-IKnowYourLie@1502}
+      - STUDENT_PASSWORD=${STUDENT_PASSWORD:-StudentPass123!}
     expose:
       - "8000"
 
