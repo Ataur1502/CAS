@@ -523,13 +523,17 @@ def student_submit_exam(request, attempt_id):
         locked_attempt.submission_reason = 'NORMAL'
         locked_attempt.save()
 
+    is_coding = getattr(locked_attempt.exam, 'exam_type', 'MCQ') == 'CODING'
     return Response({
         'success': True,
         'status': locked_attempt.status,
-        'score': locked_attempt.score,
+        'exam_type': locked_attempt.exam.exam_type,
+        'score': None if is_coding else locked_attempt.score,
         'max_score': locked_attempt.max_score,
-        'percentage': locked_attempt.percentage,
+        'percentage': None if is_coding else locked_attempt.percentage,
+        'results_published': not is_coding,
         'submitted_at': locked_attempt.submitted_at,
+        'message': 'Your code submissions have been recorded safely. Results will be published soon after post-exam validation.' if is_coding else 'Exam submitted successfully.',
     })
 
 

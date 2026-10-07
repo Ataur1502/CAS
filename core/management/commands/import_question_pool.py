@@ -23,7 +23,7 @@ class Command(BaseCommand):
             raise CommandError(f"Question pool file not found at: {pool_file}")
 
         try:
-            with open(pool_file, "r", encoding="utf-8") as f:
+            with open(pool_file, "r", encoding="utf-8-sig") as f:
                 questions_data = json.load(f)
         except Exception as e:
             raise CommandError(f"Failed to read question pool JSON: {e}")
@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 question_text = item["question_text"]
                 category = item.get("category", "")
                 difficulty = item.get("difficulty", "Medium")
-                marks = item.get("marks", 2)
+                marks = item.get("marks", 1)
                 explanation = item.get("explanation", "")
                 options_list = item.get("options", [])
 

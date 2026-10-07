@@ -319,6 +319,8 @@ class StudentExamCardSerializer(serializers.ModelSerializer):
         return att is not None and att.status in ['SUBMITTED', 'AUTO_SUBMITTED']
 
     def get_score(self, obj):
+        if getattr(obj, 'exam_type', 'MCQ') == 'CODING':
+            return None
         att = self._get_attempt(obj)
         return att.score if att and att.status in ['SUBMITTED', 'AUTO_SUBMITTED'] else None
 
@@ -327,6 +329,8 @@ class StudentExamCardSerializer(serializers.ModelSerializer):
         return att.max_score if att and att.status in ['SUBMITTED', 'AUTO_SUBMITTED'] else None
 
     def get_percentage(self, obj):
+        if getattr(obj, 'exam_type', 'MCQ') == 'CODING':
+            return None
         att = self._get_attempt(obj)
         return att.percentage if att and att.status in ['SUBMITTED', 'AUTO_SUBMITTED'] else None
 
@@ -400,6 +404,10 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
     max_score = serializers.SerializerMethodField()
     total_marks = serializers.SerializerMethodField()
 
+    score = serializers.SerializerMethodField()
+    percentage = serializers.SerializerMethodField()
+    results_published = serializers.SerializerMethodField()
+
     class Meta:
         model = ExamAttempt
         fields = [
@@ -425,7 +433,21 @@ class ExamAttemptDetailSerializer(serializers.ModelSerializer):
             'questions',
             'answers',
             'server_time',
+            'results_published',
         ]
+
+    def get_score(self, obj):
+        if getattr(obj.exam, 'exam_type', 'MCQ') == 'CODING':
+            return None
+        return obj.score
+
+    def get_percentage(self, obj):
+        if getattr(obj.exam, 'exam_type', 'MCQ') == 'CODING':
+            return None
+        return obj.percentage
+
+    def get_results_published(self, obj):
+        return getattr(obj.exam, 'exam_type', 'MCQ') != 'CODING'
 
     def get_max_violations(self, obj):
         return getattr(obj.exam, 'max_violations', 6) or 6
@@ -508,6 +530,9 @@ class ResultSerializer(serializers.ModelSerializer):
     exam_id = serializers.IntegerField(source='exam.id', read_only=True)
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     exam_type = serializers.CharField(source='exam.exam_type', read_only=True)
+    score = serializers.SerializerMethodField()
+    percentage = serializers.SerializerMethodField()
+    results_published = serializers.SerializerMethodField()
     submissions = serializers.SerializerMethodField()
 
     class Meta:
@@ -530,7 +555,28 @@ class ResultSerializer(serializers.ModelSerializer):
             'started_at',
             'submitted_at',
             'submissions',
+            'results_published',
         ]
+
+    def _is_admin(self):
+        request = self.context.get('request')
+        return bool(request and request.user and request.user.is_staff)
+
+    def get_score(self, obj):
+        # Do not expose unvalidated coding exam scores to students
+        if getattr(obj.exam, 'exam_type', 'MCQ') == 'CODING' and not self._is_admin():
+            return None
+        return obj.score
+
+    def get_percentage(self, obj):
+        if getattr(obj.exam, 'exam_type', 'MCQ') == 'CODING' and not self._is_admin():
+            return None
+        return obj.percentage
+
+    def get_results_published(self, obj):
+        if getattr(obj.exam, 'exam_type', 'MCQ') == 'CODING':
+            return False
+        return True
 
     def get_submissions(self, obj):
         answers = obj.answers.select_related('question').all()

@@ -3,7 +3,7 @@
     "source_id": "Q1",
     "category": "Java",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the output?\n\nList<Integer> x = List.of(1, 2, 3);\nlong count = x.stream().filter(n -> n % 2 == 1).count();\nSystem.out.println(count);",
     "options": [
       {
@@ -33,7 +33,7 @@
     "source_id": "Q2",
     "category": "Java",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A Java class stores custom objects in a HashSet. The class overrides equals() but not hashCode(). What is the most important consequence?",
     "options": [
       {
@@ -63,7 +63,7 @@
     "source_id": "Q3",
     "category": "Java",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which statement about Java HashMap is correct in the average case?",
     "options": [
       {
@@ -93,7 +93,7 @@
     "source_id": "Q4",
     "category": "Java",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the primary benefit of Java generics?",
     "options": [
       {
@@ -123,7 +123,7 @@
     "source_id": "Q5",
     "category": "Java",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the final list?\n\nList<Integer> a = new ArrayList<>();\na.add(10); a.add(20); a.add(30);\na.remove(1);\nSystem.out.println(a);",
     "options": [
       {
@@ -153,7 +153,7 @@
     "source_id": "Q6",
     "category": "Java",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A Java program creates many short-lived objects and experiences frequent garbage collections. Which change is most directly aimed at reducing allocation pressure?",
     "options": [
       {
@@ -183,7 +183,7 @@
     "source_id": "Q7",
     "category": "Java",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Two threads execute this code on a shared variable without synchronization:\n\nfor (int i = 0; i < 1000000; i++) {\n count++;\n}\n\nWhich statement is correct?",
     "options": [
       {
@@ -213,7 +213,7 @@
     "source_id": "Q8",
     "category": "Python",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What does a Python generator primarily provide?",
     "options": [
       {
@@ -243,7 +243,7 @@
     "source_id": "Q9",
     "category": "Python",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is a closure in Python?",
     "options": [
       {
@@ -273,7 +273,7 @@
     "source_id": "Q10",
     "category": "Python",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is printed?\n\ndef add(x, items=[]):\n items.append(x)\n return items\n\nprint(add(1))\nprint(add(2))",
     "options": [
       {
@@ -303,7 +303,7 @@
     "source_id": "Q11",
     "category": "Python",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What does *args allow in a Python function?",
     "options": [
       {
@@ -333,7 +333,7 @@
     "source_id": "Q12",
     "category": "Python",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the output?\n\nfuncs = [lambda: i for i in range(3)]\nprint([f() for f in funcs])",
     "options": [
       {
@@ -363,7 +363,7 @@
     "source_id": "Q13",
     "category": "Python",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which statement best describes the CPython GIL?",
     "options": [
       {
@@ -393,7 +393,7 @@
     "source_id": "Q14",
     "category": "Python",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the most likely result?\n\ndef deco(fn):\n def wrapper():\n  return fn()\n return wrapper\n\n@deco\ndef greet():\n pass\n\nprint(greet.__name__)",
     "options": [
       {
@@ -423,7 +423,7 @@
     "source_id": "Q15",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which sorting algorithm has worst-case O(n log n) time and is stable in its standard merge-based implementation?",
     "options": [
       {
@@ -453,7 +453,7 @@
     "source_id": "Q16",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A Quick Sort implementation repeatedly chooses the smallest element as the pivot. For n elements, what is the worst-case complexity?",
     "options": [
       {
@@ -473,7 +473,7 @@
       },
       {
         "key": "D",
-        "text": "O(n²)",
+        "text": "O(n\u00c2\u00b2)",
         "is_correct": true
       }
     ],
@@ -483,7 +483,7 @@
     "source_id": "Q17",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which data structure is typically used to implement Dijkstra's algorithm efficiently on a sparse graph?",
     "options": [
       {
@@ -513,7 +513,7 @@
     "source_id": "Q18",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A graph has negative edge weights but no negative cycles. Which algorithm should be used for single-source shortest paths?",
     "options": [
       {
@@ -543,7 +543,7 @@
     "source_id": "Q19",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A topological ordering exists for which kind of graph?",
     "options": [
       {
@@ -573,7 +573,7 @@
     "source_id": "Q20",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Consider a recursive solution to Fibonacci that stores every computed result in a table before returning. What optimization is being used?",
     "options": [
       {
@@ -603,7 +603,7 @@
     "source_id": "Q21",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which collision-resolution method stores multiple keys in a bucket, commonly using linked structures or trees?",
     "options": [
       {
@@ -633,7 +633,7 @@
     "source_id": "Q22",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A dynamic array doubles its capacity whenever it becomes full. Over a long sequence of n appends, what is the amortized cost per append?",
     "options": [
       {
@@ -653,7 +653,7 @@
       },
       {
         "key": "D",
-        "text": "O(n²)",
+        "text": "O(n\u00c2\u00b2)",
         "is_correct": false
       }
     ],
@@ -663,7 +663,7 @@
     "source_id": "Q23",
     "category": "Data Structures & Algorithms",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "An AVL node z has balance factor +2 and its left child has balance factor -1. Which operation fixes the imbalance?",
     "options": [
       {
@@ -693,7 +693,7 @@
     "source_id": "Q24",
     "category": "Data Structures & Algorithms",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "For a graph with nonnegative edge weights, why can Dijkstra's algorithm finalize the minimum-distance vertex greedily?",
     "options": [
       {
@@ -723,7 +723,7 @@
     "source_id": "Q25",
     "category": "Data Structures & Algorithms",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Solve the recurrence: T(n) = 2T(n/2) + n. What is the asymptotic complexity?",
     "options": [
       {
@@ -743,7 +743,7 @@
       },
       {
         "key": "D",
-        "text": "O(n²)",
+        "text": "O(n\u00c2\u00b2)",
         "is_correct": false
       }
     ],
@@ -753,7 +753,7 @@
     "source_id": "Q26",
     "category": "Data Structures & Algorithms",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which technique is most appropriate for finding a minimum spanning tree of a connected weighted undirected graph?",
     "options": [
       {
@@ -783,7 +783,7 @@
     "source_id": "Q27",
     "category": "OOP & Inheritance",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which SOLID principle says a class should have one reason to change?",
     "options": [
       {
@@ -813,7 +813,7 @@
     "source_id": "Q28",
     "category": "OOP & Inheritance",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which statement is correct about this Java declaration?\n\nabstract class Shape {\n abstract double area();\n}\nclass Circle extends Shape {\n double r;\n Circle(double r) { this.r = r; }\n double area() { return Math.PI * r * r; }\n}",
     "options": [
       {
@@ -843,7 +843,7 @@
     "source_id": "Q29",
     "category": "OOP & Inheritance",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A subclass overrides a parent method but strengthens its precondition so inputs accepted by the parent are rejected by the child. Which principle is violated?",
     "options": [
       {
@@ -873,7 +873,7 @@
     "source_id": "Q30",
     "category": "OOP & Inheritance",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the main problem with deep inheritance hierarchies?",
     "options": [
       {
@@ -903,7 +903,7 @@
     "source_id": "Q31",
     "category": "OOP & Inheritance",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which design pattern is most appropriate when an object should notify multiple dependent objects automatically when its state changes?",
     "options": [
       {
@@ -933,7 +933,7 @@
     "source_id": "Q32",
     "category": "OOP & Inheritance",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "The diamond problem occurs primarily when:",
     "options": [
       {
@@ -963,7 +963,7 @@
     "source_id": "Q33",
     "category": "Agentic & AI",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What does RAG primarily add to an LLM application?",
     "options": [
       {
@@ -993,7 +993,7 @@
     "source_id": "Q34",
     "category": "Agentic & AI",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "An agent follows this loop:\n\nThought -> Tool Call -> Observation -> Next Thought -> Tool Call\n\nWhich agent pattern does this most closely represent?",
     "options": [
       {
@@ -1023,7 +1023,7 @@
     "source_id": "Q35",
     "category": "Agentic & AI",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "When is RAG generally preferable to fine-tuning for frequently changing factual knowledge?",
     "options": [
       {
@@ -1053,7 +1053,7 @@
     "source_id": "Q36",
     "category": "Agentic & AI",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "An agent is allowed to call a money-transfer API. Which check should occur immediately before the side-effecting action?",
     "options": [
       {
@@ -1083,7 +1083,7 @@
     "source_id": "Q37",
     "category": "Agentic & AI",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "An agent repeatedly calls an expensive API because it fails to recognize that a previous tool result is still valid. Which design improvement is most directly relevant?",
     "options": [
       {
@@ -1113,7 +1113,7 @@
     "source_id": "Q38",
     "category": "Agentic & AI",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which metric is most useful for evaluating whether an agent successfully completed a multi-step task?",
     "options": [
       {
@@ -1143,7 +1143,7 @@
     "source_id": "Q39",
     "category": "Operating Systems",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which scheduling algorithm uses a time quantum?",
     "options": [
       {
@@ -1173,7 +1173,7 @@
     "source_id": "Q40",
     "category": "Operating Systems",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A system has processes P1 and P2. P1 holds resource R1 and waits for R2; P2 holds R2 and waits for R1. Which deadlock condition is directly visible?",
     "options": [
       {
@@ -1203,7 +1203,7 @@
     "source_id": "Q41",
     "category": "Operating Systems",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is a page fault?",
     "options": [
       {
@@ -1233,7 +1233,7 @@
     "source_id": "Q42",
     "category": "Operating Systems",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which synchronization primitive is commonly used to control access to a shared resource?",
     "options": [
       {
@@ -1263,7 +1263,7 @@
     "source_id": "Q43",
     "category": "Operating Systems",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A process repeatedly accesses a small working set of pages. Which replacement strategy is most likely to exploit locality effectively?",
     "options": [
       {
@@ -1293,7 +1293,7 @@
     "source_id": "Q44",
     "category": "Operating Systems",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A system has 3 page frames and the reference string causes Belady's anomaly under FIFO. What does the anomaly mean?",
     "options": [
       {
@@ -1323,7 +1323,7 @@
     "source_id": "Q45",
     "category": "DBMS",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which ACID property means a transaction's changes are treated as an all-or-nothing unit?",
     "options": [
       {
@@ -1353,7 +1353,7 @@
     "source_id": "Q46",
     "category": "DBMS",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What does this SQL query do?\n\nSELECT dept, AVG(salary)\nFROM Employee\nGROUP BY dept\nHAVING AVG(salary) > 80000;",
     "options": [
       {
@@ -1383,7 +1383,7 @@
     "source_id": "Q47",
     "category": "DBMS",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the main purpose of an index?",
     "options": [
       {
@@ -1413,7 +1413,7 @@
     "source_id": "Q48",
     "category": "DBMS",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A relation is in 2NF if it is in 1NF and:",
     "options": [
       {
@@ -1443,7 +1443,7 @@
     "source_id": "Q49",
     "category": "DBMS",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which SQL query correctly finds departments whose average salary exceeds 80000?",
     "options": [
       {
@@ -1473,7 +1473,7 @@
     "source_id": "Q50",
     "category": "DBMS",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Under snapshot isolation, two concurrent transactions can both read the same snapshot and then update different rows. Which anomaly can still occur in some systems?",
     "options": [
       {
@@ -1503,7 +1503,7 @@
     "source_id": "Q51",
     "category": "Computer Networks",
     "difficulty": "Easy",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which protocol resolves a domain name such as example.com to an IP address?",
     "options": [
       {
@@ -1533,7 +1533,7 @@
     "source_id": "Q52",
     "category": "Computer Networks",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "Which transport protocol provides reliable, ordered byte-stream delivery?",
     "options": [
       {
@@ -1563,7 +1563,7 @@
     "source_id": "Q53",
     "category": "Computer Networks",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "What is the main purpose of HTTPS compared with HTTP?",
     "options": [
       {
@@ -1593,7 +1593,7 @@
     "source_id": "Q54",
     "category": "Computer Networks",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A router has these routes:\n\n10.0.0.0/8\n10.1.0.0/16\n\nFor destination 10.1.2.5, which route is selected?",
     "options": [
       {
@@ -1623,7 +1623,7 @@
     "source_id": "Q55",
     "category": "Computer Networks",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A TCP sender detects congestion through repeated packet loss. Which behavior is generally expected from congestion control?",
     "options": [
       {
@@ -1653,7 +1653,7 @@
     "source_id": "Q56",
     "category": "Computer Networks",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A client can resolve a hostname using one DNS resolver but not another. Which is the most plausible explanation?",
     "options": [
       {
@@ -1683,7 +1683,7 @@
     "source_id": "Q57",
     "category": "System Design & SE",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A web service has a single application server and traffic spikes unpredictably. Which component is a common first step for distributing requests across multiple servers?",
     "options": [
       {
@@ -1713,7 +1713,7 @@
     "source_id": "Q58",
     "category": "System Design & SE",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A catalog service reads the same product data thousands of times per minute but updates it rarely. Which design most directly reduces repeated database reads?",
     "options": [
       {
@@ -1743,7 +1743,7 @@
     "source_id": "Q59",
     "category": "System Design & SE",
     "difficulty": "Medium",
-    "marks": 2,
+    "marks": 1,
     "question_text": "A service must remain available when one application instance fails. Which design best supports this requirement?",
     "options": [
       {
@@ -1773,7 +1773,7 @@
     "source_id": "Q60",
     "category": "System Design & SE",
     "difficulty": "Hard",
-    "marks": 2,
+    "marks": 1,
     "question_text": "In software testing, what is the strongest reason to use integration tests in addition to unit tests?",
     "options": [
       {

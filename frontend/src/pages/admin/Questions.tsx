@@ -28,7 +28,7 @@ export const Questions: React.FC = () => {
 
   // Form State
   const [questionText, setQuestionText] = useState('');
-  const [marks, setMarks] = useState<number>(2);
+  const [marks, setMarks] = useState<number>(1);
   const [category, setCategory] = useState('Cyber Security');
   const [difficulty, setDifficulty] = useState('Medium');
   const [options, setOptions] = useState<{ [key: string]: string }>({
@@ -65,7 +65,7 @@ export const Questions: React.FC = () => {
   const openCreateModal = () => {
     setEditingQuestion(null);
     setQuestionText('');
-    setMarks(2);
+    setMarks(1);
     setCategory('Cyber Security');
     setDifficulty('Medium');
     setOptions({ A: '', B: '', C: '', D: '' });

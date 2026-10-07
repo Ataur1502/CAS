@@ -7,7 +7,9 @@ import {
   AlertCircle, 
   ArrowLeft, 
   ShieldAlert, 
-  Calendar 
+  Calendar,
+  Clock,
+  FileCode
 } from 'lucide-react';
 
 export const Results: React.FC = () => {
@@ -103,21 +105,77 @@ export const Results: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Score Highlight Card */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 my-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs text-slate-500 font-semibold uppercase">Total Score</div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {res.score} <span className="text-sm font-normal text-slate-500">/ {res.max_score}</span>
+                  {/* Score Highlight Card (MCQ) OR Pending Evaluation Notice (Coding) */}
+                  {res.exam_type === 'CODING' ? (
+                    <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-4 my-4 space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800">
+                          💻 Practical Coding Assessment
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800">
+                          Pending Validation
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold text-purple-950 flex items-center">
+                          <Clock className="h-3.5 w-3.5 mr-1.5 text-purple-700 animate-pulse" />
+                          Results will be published soon
+                        </div>
+                        <p className="text-xs text-purple-900/80 leading-relaxed">
+                          Your code submissions have been recorded and saved safely. The evaluation committee is validating the solutions post-exam. Scores will be announced once validation is complete.
+                        </p>
+                      </div>
+
+                      {res.submissions && res.submissions.length > 0 && (
+                        <div className="pt-2 border-t border-purple-200/70">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-900 block mb-1.5">
+                            Your Uploaded Files ({res.submissions.length}):
+                          </span>
+                          <div className="space-y-1.5">
+                            {res.submissions.map((sub, sIdx) => (
+                              <div
+                                key={sIdx}
+                                className="flex items-center justify-between bg-white/90 border border-purple-100 rounded-lg px-3 py-1.5 text-xs"
+                              >
+                                <div className="flex items-center space-x-2 min-w-0">
+                                  <FileCode className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                  <span className="font-mono font-medium text-slate-800 truncate">
+                                    {sub.file_name}
+                                  </span>
+                                </div>
+                                {sub.file_url && (
+                                  <a
+                                    href={sub.file_url}
+                                    download={sub.file_name}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-purple-700 hover:text-purple-900 font-semibold text-xs ml-3 flex-shrink-0 underline"
+                                  >
+                                    Download
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 my-4 flex items-center justify-between">
+                      <div>
+                        <div className="text-xs text-slate-500 font-semibold uppercase">Total Score</div>
+                        <div className="text-2xl font-black text-slate-900">
+                          {res.score} <span className="text-sm font-normal text-slate-500">/ {res.max_score}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-slate-500 font-semibold uppercase">Percentage</div>
+                        <div className="text-2xl font-black text-sky-700">
+                          {res.percentage}%
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-slate-500 font-semibold uppercase">Percentage</div>
-                      <div className="text-2xl font-black text-sky-700">
-                        {res.percentage}%
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Submission details */}
                   <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
@@ -128,14 +186,16 @@ export const Results: React.FC = () => {
                       <span className="font-medium text-slate-800">{formatDateTime(res.submitted_at)}</span>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center text-slate-500">
-                        <ShieldAlert className="h-3.5 w-3.5 mr-1.5 text-slate-400" /> Violations:
-                      </span>
-                      <span className={`font-semibold ${res.violation_count > 0 ? 'text-red-600' : 'text-slate-700'}`}>
-                        {res.violation_count} recorded
-                      </span>
-                    </div>
+                    {res.exam_type !== 'CODING' && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-slate-500">
+                          <ShieldAlert className="h-3.5 w-3.5 mr-1.5 text-slate-400" /> Violations:
+                        </span>
+                        <span className={`font-semibold ${res.violation_count > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                          {res.violation_count} recorded
+                        </span>
+                      </div>
+                    )}
 
                     {res.submission_reason && res.submission_reason !== 'NORMAL' && (
                       <div className="flex items-center justify-between">
@@ -148,7 +208,17 @@ export const Results: React.FC = () => {
 
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                   <span className="flex items-center font-medium">
-                    <CheckCircle className="h-3.5 w-3.5 mr-1 text-emerald-600" /> Verified Server Score
+                    {res.exam_type === 'CODING' ? (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5 mr-1 text-purple-600" />
+                        Code Solutions Submitted & Recorded
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                        Verified Server Score
+                      </>
+                    )}
                   </span>
                   <span className="font-mono text-slate-400">Attempt ID: #{res.id}</span>
                 </div>

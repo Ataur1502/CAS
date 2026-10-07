@@ -494,7 +494,7 @@ export const ExamRoom: React.FC = () => {
               : autoSubmitReason === 'TIME_EXPIRED' || attempt?.submission_reason === 'TIME_EXPIRED'
               ? 'Your exam was automatically submitted because the exam time expired.'
               : attempt?.exam_type === 'CODING'
-              ? 'Your source code submissions have been recorded and saved for evaluator review.'
+              ? 'Your source code submissions have been recorded and saved safely on the server. Coding results will be published soon after post-exam validation.'
               : 'Your responses have been recorded on the server.'}
           </p>
 
@@ -508,10 +508,16 @@ export const ExamRoom: React.FC = () => {
               <span className="font-bold text-slate-800">{attempt?.status}</span>
             </div>
             {attempt?.exam_type === 'CODING' ? (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Exam Format:</span>
-                <span className="font-bold text-purple-700">Practical Coding Assessment</span>
-              </div>
+              <>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Exam Format:</span>
+                  <span className="font-bold text-purple-700">Practical Coding Assessment</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Evaluation:</span>
+                  <span className="font-bold text-amber-700">Results will be published soon</span>
+                </div>
+              </>
             ) : (
               <div className="flex justify-between">
                 <span className="text-slate-500">Violations Recorded:</span>
@@ -522,12 +528,20 @@ export const ExamRoom: React.FC = () => {
             )}
           </div>
 
-          <button
-            onClick={() => navigate('/results')}
-            className="w-full py-3 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-semibold text-sm transition"
-          >
-            View My Results &rarr;
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => navigate('/results')}
+              className="flex-1 py-3 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-semibold text-sm transition"
+            >
+              {attempt?.exam_type === 'CODING' ? 'View My Submissions →' : 'View My Results →'}
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-3 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm transition"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

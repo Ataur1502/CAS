@@ -1049,8 +1049,8 @@ class RealQuestionPoolTests(TestCase):
         attempt_id = start_resp.data['id']
         assigned_questions = start_resp.data['questions']
 
-        # Max score is 30 questions * 2 marks = 60
-        self.assertEqual(start_resp.data['max_score'], 60.0)
+        # Max score is 30 questions * 1 mark = 30
+        self.assertEqual(start_resp.data['max_score'], 30.0)
 
         # Answer 10 correctly
         for q in assigned_questions[:10]:
@@ -1062,8 +1062,8 @@ class RealQuestionPoolTests(TestCase):
 
         submit_resp = self.client.post(f'/api/attempts/{attempt_id}/submit/')
         self.assertEqual(submit_resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(submit_resp.data['score'], 20.0)
-        self.assertEqual(submit_resp.data['max_score'], 60.0)
+        self.assertEqual(submit_resp.data['score'], 10.0)
+        self.assertEqual(submit_resp.data['max_score'], 30.0)
         self.assertAlmostEqual(submit_resp.data['percentage'], 33.33, places=2)
 
     # 11. Student cannot answer an unassigned question.

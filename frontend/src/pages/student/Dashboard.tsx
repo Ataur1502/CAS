@@ -247,14 +247,18 @@ export const Dashboard: React.FC = () => {
                   {exam.status === 'COMPLETED' && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-600 flex items-center">
-                        <CheckCircle className="h-4 w-4 text-emerald-600 mr-1.5" />
-                        {exam.has_attempted ? `Score: ${exam.score}/${exam.max_score} (${exam.percentage}%)` : 'Window Closed'}
+                        <CheckCircle className="h-4 w-4 text-emerald-600 mr-1.5 flex-shrink-0" />
+                        {exam.has_attempted ? (
+                          exam.exam_type === 'CODING'
+                            ? 'Submitted - Results will be published soon'
+                            : `Score: ${exam.score}/${exam.max_score} (${exam.percentage}%)`
+                        ) : 'Window Closed'}
                       </span>
                       <button
                         onClick={() => navigate('/results')}
-                        className="text-xs font-semibold text-sky-700 hover:text-sky-800 underline"
+                        className="text-xs font-semibold text-sky-700 hover:text-sky-800 underline ml-2 flex-shrink-0"
                       >
-                        View Results
+                        {exam.exam_type === 'CODING' ? 'View Submission' : 'View Results'}
                       </button>
                     </div>
                   )}

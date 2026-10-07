@@ -77,9 +77,10 @@ export interface ExamAttemptDetail {
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
   started_at: string;
   submitted_at: string | null;
-  score: number;
+  score: number | null;
   max_score: number;
-  percentage: number;
+  percentage: number | null;
+  results_published?: boolean;
   violation_count: number;
   submission_reason: string;
   remaining_seconds: number;
@@ -103,9 +104,10 @@ export interface ExamResult {
   exam_id: number;
   exam_title: string;
   exam_type?: 'MCQ' | 'CODING';
-  score: number;
+  score: number | null;
   max_score: number;
-  percentage: number;
+  percentage: number | null;
+  results_published?: boolean;
   status: string;
   violation_count: number;
   submission_reason: string;
