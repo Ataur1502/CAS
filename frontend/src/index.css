@@ -21,3 +21,61 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
+/* Styling for Markdown views in Coding Problems */
+.coding-markdown-view h1,
+.coding-markdown-view h2,
+.coding-markdown-view h3 {
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+.coding-markdown-view h1 { font-size: 1.5rem; }
+.coding-markdown-view h2 { font-size: 1.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
+.coding-markdown-view h3 { font-size: 1.05rem; }
+
+.coding-markdown-view p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.coding-markdown-view ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.coding-markdown-view li {
+  margin-bottom: 0.25rem;
+}
+
+.coding-markdown-view code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  border: 1px solid #e2e8f0;
+}
+
+.coding-markdown-view pre {
+  background-color: #0f172a;
+  color: #38bdf8;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.coding-markdown-view pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
