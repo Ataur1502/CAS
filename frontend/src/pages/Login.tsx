@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import { GraduationCap, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const [rollNumber, setRollNumber] = useState('2311CS040001');
-  const [password, setPassword] = useState('StudentPass123!');
+  const [rollNumber, setRollNumber] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -67,7 +67,7 @@ export const Login: React.FC = () => {
                   required
                   value={rollNumber}
                   onChange={(e) => setRollNumber(e.target.value)}
-                  placeholder="e.g. 2311CS040001"
+                  placeholder="Enter your roll number"
                   className="block w-full px-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-sky-600 text-sm font-mono"
                 />
               </div>
@@ -87,7 +87,7 @@ export const Login: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
                   className="block w-full px-3 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-sky-600 text-sm"
                 />
               </div>
@@ -106,32 +106,12 @@ export const Login: React.FC = () => {
                   </span>
                 ) : (
                   <span className="inline-flex items-center">
-                    Student Login <ArrowRight className="ml-2 h-4 w-4" />
+                    Login <ArrowRight className="ml-2 h-4 w-4" />
                   </span>
                 )}
               </button>
             </div>
           </form>
-
-          {/* Dev credentials box */}
-          <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
-            <div className="font-semibold text-slate-700 mb-1 flex items-center">
-              <Lock className="h-3 w-3 mr-1 text-slate-500" />
-              Demo Credentials:
-            </div>
-            <div>CS Roll: <code className="font-mono font-bold text-sky-700">2311CS040001</code></div>
-            <div>IoT Roll: <code className="font-mono font-bold text-sky-700">2311CS050001</code></div>
-            <div>Password: <code className="font-mono font-bold text-sky-700">StudentPass123!</code></div>
-          </div>
-
-          <div className="mt-6 border-t border-slate-200 pt-4 text-center">
-            <Link
-              to="/admin/login"
-              className="text-xs font-medium text-slate-500 hover:text-sky-700 transition"
-            >
-              Are you a faculty administrator? Go to Admin Login &rarr;
-            </Link>
-          </div>
         </div>
       </div>
     </div>

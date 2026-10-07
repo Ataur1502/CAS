@@ -85,10 +85,12 @@ class AdminQuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = [
             'id',
+            'source_id',
             'question_text',
             'marks',
             'category',
             'difficulty',
+            'explanation',
             'is_active',
             'options',
             'created_at',

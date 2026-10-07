@@ -53,16 +53,19 @@ class ExamDepartment(models.Model):
 
 
 class Question(models.Model):
+    source_id = models.CharField(max_length=50, blank=True, default='', db_index=True)
     question_text = models.TextField()
     marks = models.PositiveIntegerField(default=1)
     category = models.CharField(max_length=100, blank=True, default='')
     difficulty = models.CharField(max_length=50, blank=True, default='Medium')
+    explanation = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.question_text[:50]
+        prefix = f"[{self.source_id}] " if self.source_id else ""
+        return f"{prefix}{self.question_text[:50]}"
 
 
 class Option(models.Model):

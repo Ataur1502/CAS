@@ -99,7 +99,7 @@ def login_view(request):
     """
     Handles both Student and Admin login.
     Students use roll_number (or username) and password.
-    Admins use username (e.g. ADMIN01) and password.
+    Admins use username and password.
     """
     username = request.data.get('roll_number') or request.data.get('username')
     password = request.data.get('password')

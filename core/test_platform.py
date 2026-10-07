@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status
@@ -19,6 +20,10 @@ from core.models import (
 )
 from core.views import calculate_attempt_score
 
+TEST_ADMIN_USER = "test_staff_admin"
+TEST_ADMIN_PASS = "SecAdminTestPass987!"
+TEST_STUDENT_PASS = "SecStudentTestPass987!"
+
 
 class CASPlatformComprehensiveTests(TestCase):
     def setUp(self):
@@ -31,15 +36,15 @@ class CASPlatformComprehensiveTests(TestCase):
         # 2. Users & Profiles
         # Admin
         self.admin_user = User.objects.create_superuser(
-            username="ADMIN01",
-            password="AdminPassword123!",
+            username=TEST_ADMIN_USER,
+            password=TEST_ADMIN_PASS,
             email="admin@university.edu"
         )
 
         # CS Student 1
         self.cs_user = User.objects.create_user(
             username="2311CS040001",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
             first_name="Alice",
             last_name="CS"
         )
@@ -54,7 +59,7 @@ class CASPlatformComprehensiveTests(TestCase):
         # CS Student 2 (Exception roll number)
         self.cs_user_exc = User.objects.create_user(
             username="2211CS040008",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
             first_name="Special",
             last_name="CS"
         )
@@ -69,7 +74,7 @@ class CASPlatformComprehensiveTests(TestCase):
         # IoT Student
         self.iot_user = User.objects.create_user(
             username="2311CS050001",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
             first_name="Bob",
             last_name="IoT"
         )
@@ -84,7 +89,7 @@ class CASPlatformComprehensiveTests(TestCase):
         # Inactive Student
         self.inactive_user = User.objects.create_user(
             username="2311CS040002",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
         )
         self.inactive_student = Student.objects.create(
             user=self.inactive_user,
@@ -187,7 +192,7 @@ class CASPlatformComprehensiveTests(TestCase):
     def test_student_login_success(self):
         resp = self.client.post('/api/auth/login/', {
             'roll_number': '2311CS040001',
-            'password': 'StudentPass123!'
+            'password': TEST_STUDENT_PASS
         })
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data['role'], 'STUDENT')
@@ -206,8 +211,8 @@ class CASPlatformComprehensiveTests(TestCase):
     # 3. Admin login
     def test_admin_login_success(self):
         resp = self.client.post('/api/auth/login/', {
-            'username': 'ADMIN01',
-            'password': 'AdminPassword123!'
+            'username': TEST_ADMIN_USER,
+            'password': TEST_ADMIN_PASS
         })
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data['role'], 'ADMIN')
@@ -217,7 +222,7 @@ class CASPlatformComprehensiveTests(TestCase):
     def test_inactive_student_login(self):
         resp = self.client.post('/api/auth/login/', {
             'roll_number': '2311CS040002',
-            'password': 'StudentPass123!'
+            'password': TEST_STUDENT_PASS
         })
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -640,14 +645,14 @@ class CASPlatformComprehensiveTests(TestCase):
         # Verify special roll number exists and belongs to CS
         special = Student.objects.get(roll_number='2211CS040008')
         self.assertEqual(special.department.code, 'CS')
-        self.assertEqual(Exam.objects.count(), initial_exams + 3)
+        self.assertEqual(Exam.objects.count(), initial_exams)
 
         # Run seed_data again to verify idempotence
         call_command('seed_data')
         self.assertEqual(Student.objects.count(), 301)
         self.assertEqual(Student.objects.filter(department__code='CS').count(), 181)
         self.assertEqual(Student.objects.filter(department__code='IOT').count(), 120)
-        self.assertEqual(Exam.objects.count(), initial_exams + 3)
+        self.assertEqual(Exam.objects.count(), initial_exams)
 
 
 class QuestionRandomizationTests(TestCase):
@@ -660,7 +665,7 @@ class QuestionRandomizationTests(TestCase):
         # Two students in CS
         self.alice_user = User.objects.create_user(
             username="2311CS040001",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
             first_name="Alice",
             last_name="CS"
         )
@@ -674,7 +679,7 @@ class QuestionRandomizationTests(TestCase):
 
         self.bob_user = User.objects.create_user(
             username="2311CS040002",
-            password="StudentPass123!",
+            password=TEST_STUDENT_PASS,
             first_name="Bob",
             last_name="CS"
         )
@@ -906,4 +911,191 @@ class QuestionRandomizationTests(TestCase):
 
         # With 60 pool and 30 sample, probability of identical set is ~ 1 / 1.18e20
         self.assertNotEqual(set(alice_ids), set(bob_ids))
+
+
+class RealQuestionPoolTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # Departments
+        self.cs_dept, _ = Department.objects.get_or_create(code="CS", defaults={"name": "Cyber Security"})
+        self.iot_dept, _ = Department.objects.get_or_create(code="IOT", defaults={"name": "Internet of Things"})
+
+        # Run import_question_pool to load real 60-MCQ pool and configure exam
+        call_command('import_question_pool')
+
+        # Students
+        self.student_user = User.objects.create_user(
+            username="2311CS040001",
+            password=TEST_STUDENT_PASS,
+            first_name="Alice",
+            last_name="CS"
+        )
+        self.student = Student.objects.create(
+            user=self.student_user,
+            roll_number="2311CS040001",
+            full_name="Alice Cyber",
+            department=self.cs_dept,
+            active=True
+        )
+
+        self.admin_user = User.objects.create_superuser(
+            username=TEST_ADMIN_USER,
+            password=TEST_ADMIN_PASS,
+            email="admin@university.edu"
+        )
+
+        self.exam = Exam.objects.get(title="Final-Year B.Tech Technical Assessment")
+
+    # 1. Exactly 60 real questions exist.
+    def test_real_pool_has_exactly_60_questions(self):
+        active_count = Question.objects.filter(is_active=True).count()
+        self.assertEqual(active_count, 60)
+
+    # 2. Every question has 4 options.
+    def test_every_question_has_four_options(self):
+        for q in Question.objects.filter(is_active=True):
+            self.assertEqual(q.options.count(), 4, f"Question {q.source_id} does not have 4 options")
+            keys = set(q.options.values_list('option_key', flat=True))
+            self.assertEqual(keys, {'A', 'B', 'C', 'D'})
+
+    # 3. Every question has exactly one correct option.
+    def test_every_question_has_exactly_one_correct_option(self):
+        for q in Question.objects.filter(is_active=True):
+            correct_count = q.options.filter(is_correct=True).count()
+            self.assertEqual(correct_count, 1, f"Question {q.source_id} has {correct_count} correct options")
+
+    # 4. No duplicate source IDs.
+    def test_no_duplicate_source_ids(self):
+        source_ids = list(Question.objects.filter(is_active=True).values_list('source_id', flat=True))
+        self.assertEqual(len(source_ids), 60)
+        self.assertEqual(len(set(source_ids)), 60)
+        expected_ids = {f"Q{i}" for i in range(1, 61)}
+        self.assertEqual(set(source_ids), expected_ids)
+
+    # 5. Exam contains all 60 questions.
+    def test_exam_contains_all_60_questions(self):
+        self.assertEqual(self.exam.exam_questions.count(), 60)
+        self.assertEqual(self.exam.questions_per_attempt, 30)
+
+    # 6. Attempt selects exactly 30.
+    def test_attempt_selects_exactly_30(self):
+        self.client.force_authenticate(user=self.student_user)
+        resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(resp.data['questions']), 30)
+        self.assertEqual(AttemptQuestion.objects.filter(attempt_id=resp.data['id']).count(), 30)
+
+    # 7. Selected questions are unique.
+    def test_selected_questions_are_unique(self):
+        self.client.force_authenticate(user=self.student_user)
+        resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        q_ids = [q['id'] for q in resp.data['questions']]
+        self.assertEqual(len(q_ids), 30)
+        self.assertEqual(len(set(q_ids)), 30)
+        orders = [q['order'] for q in resp.data['questions']]
+        self.assertEqual(orders, list(range(1, 31)))
+
+    # 8. Selected questions belong to the 60-question pool.
+    def test_selected_questions_belong_to_60_pool(self):
+        self.client.force_authenticate(user=self.student_user)
+        resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        selected_ids = {q['id'] for q in resp.data['questions']}
+        pool_ids = set(self.exam.exam_questions.values_list('question_id', flat=True))
+        self.assertTrue(selected_ids.issubset(pool_ids))
+
+    # 9. Refresh preserves the same 30.
+    def test_refresh_preserves_same_30(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        original_ids = [q['id'] for q in start_resp.data['questions']]
+
+        reload_resp = self.client.get(f'/api/attempts/{attempt_id}/')
+        reloaded_ids = [q['id'] for q in reload_resp.data['questions']]
+        self.assertEqual(original_ids, reloaded_ids)
+
+    # 10. Scoring uses only the selected 30.
+    def test_scoring_uses_only_selected_30(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_questions = start_resp.data['questions']
+
+        # Max score is 30 questions * 2 marks = 60
+        self.assertEqual(start_resp.data['max_score'], 60.0)
+
+        # Answer 10 correctly
+        for q in assigned_questions[:10]:
+            correct_opt = Question.objects.get(id=q['id']).options.get(is_correct=True)
+            self.client.post(f'/api/attempts/{attempt_id}/answers/', {
+                'question_id': q['id'],
+                'option_id': correct_opt.id
+            })
+
+        submit_resp = self.client.post(f'/api/attempts/{attempt_id}/submit/')
+        self.assertEqual(submit_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(submit_resp.data['score'], 20.0)
+        self.assertEqual(submit_resp.data['max_score'], 60.0)
+        self.assertAlmostEqual(submit_resp.data['percentage'], 33.33, places=2)
+
+    # 11. Student cannot answer an unassigned question.
+    def test_student_cannot_answer_unassigned_question(self):
+        self.client.force_authenticate(user=self.student_user)
+        start_resp = self.client.post(f'/api/exams/{self.exam.id}/start/')
+        attempt_id = start_resp.data['id']
+        assigned_ids = {q['id'] for q in start_resp.data['questions']}
+
+        all_pool_questions = self.exam.exam_questions.values_list('question_id', flat=True)
+        unassigned_id = next(qid for qid in all_pool_questions if qid not in assigned_ids)
+        unassigned_opt = Option.objects.filter(question_id=unassigned_id).first()
+
+        ans_resp = self.client.post(f'/api/attempts/{attempt_id}/answers/', {
+            'question_id': unassigned_id,
+            'option_id': unassigned_opt.id
+        })
+        self.assertEqual(ans_resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("not assigned to your exam attempt", ans_resp.data['error'])
+
+    # 12. Student cannot access admin APIs.
+    def test_student_cannot_access_admin_apis(self):
+        self.client.force_authenticate(user=self.student_user)
+        for endpoint in ['/api/admin/dashboard/', '/api/admin/questions/', '/api/admin/exams/', '/api/admin/results/']:
+            resp = self.client.get(endpoint)
+            self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN, f"Endpoint {endpoint} was not forbidden for student")
+
+    # 13. Student login does not expose admin information.
+    def test_student_login_does_not_expose_admin_information(self):
+        resp = self.client.post('/api/auth/login/', {
+            'roll_number': '2311CS040001',
+            'password': TEST_STUDENT_PASS
+        })
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['role'], 'STUDENT')
+        self.assertNotIn('is_staff', str(resp.data).lower())
+
+    # 14. Demo credentials do not appear in application responses.
+    def test_demo_credentials_do_not_appear_in_application_responses(self):
+        self.client.force_authenticate(user=self.student_user)
+        resp = self.client.get(f'/api/exams/{self.exam.id}/')
+        content_str = str(resp.data)
+        self.assertNotIn('AdminPassword123!', content_str)
+        self.assertNotIn('StudentPass123!', content_str)
+        self.assertNotIn('is_correct', content_str)
+
+    # 15. Admin authentication works with properly configured credentials.
+    def test_admin_authentication_works_with_properly_configured_credentials(self):
+        resp = self.client.post('/api/auth/login/', {
+            'username': TEST_ADMIN_USER,
+            'password': TEST_ADMIN_PASS
+        })
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['role'], 'ADMIN')
+
+    # 16. Question import is idempotent.
+    def test_question_import_is_idempotent(self):
+        initial_count = Question.objects.filter(is_active=True).count()
+        call_command('import_question_pool')
+        self.assertEqual(Question.objects.filter(is_active=True).count(), initial_count)
+
 

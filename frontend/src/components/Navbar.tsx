@@ -182,19 +182,12 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center">
               <Link
                 to="/login"
                 className="text-sm text-slate-300 hover:text-white font-medium"
               >
                 Student Login
-              </Link>
-              <span className="text-slate-600">|</span>
-              <Link
-                to="/admin/login"
-                className="text-sm text-sky-400 hover:text-sky-300 font-medium"
-              >
-                Admin Area
               </Link>
             </div>
           )}

@@ -11,14 +11,12 @@ services:
     environment:
       - DEBUG=False
       - SQLITE_DIR=/app/data
-      - DJANGO_SECRET_KEY=cas-exam-production-secret-key-301students
-      - ADMIN_USERNAME=ADMIN01
-      - ADMIN_PASSWORD=AdminPassword123!
-      - STUDENT_PASSWORD=StudentPass123!
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-cas-exam-production-secret-key-301students}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - STUDENT_PASSWORD=${STUDENT_PASSWORD:-}
     expose:
       - "8000"
-    ports:
-      - "8000:8000"
 
   nginx:
     build:

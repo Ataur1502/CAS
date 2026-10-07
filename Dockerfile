@@ -34,4 +34,4 @@ ENV PYTHONUNBUFFERED=1
 ENV DEBUG=False
 ENV SQLITE_DIR=/app/data
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py seed_data && python manage.py collectstatic --noinput && gunicorn cas_exam.wsgi:application --bind 0.0.0.0:8000 --workers 3"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py seed_data && python manage.py import_question_pool && python manage.py collectstatic --noinput && gunicorn cas_exam.wsgi:application --bind 0.0.0.0:8000 --workers 3"]

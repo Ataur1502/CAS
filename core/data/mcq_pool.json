@@ -1,0 +1,1802 @@
+[
+  {
+    "source_id": "Q1",
+    "category": "Java",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "What is the output?\n\nList<Integer> x = List.of(1, 2, 3);\nlong count = x.stream().filter(n -> n % 2 == 1).count();\nSystem.out.println(count);",
+    "options": [
+      {
+        "key": "A",
+        "text": "1",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "2",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "3",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Compilation error",
+        "is_correct": false
+      }
+    ],
+    "explanation": "The odd values are 1 and 3, so the stream count is 2."
+  },
+  {
+    "source_id": "Q2",
+    "category": "Java",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "A Java class stores custom objects in a HashSet. The class overrides equals() but not hashCode(). What is the most important consequence?",
+    "options": [
+      {
+        "key": "A",
+        "text": "HashSet will not compile",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Equal objects may be placed in different hash buckets, violating the intended set behavior",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "equals() is ignored by HashSet",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "hashCode() is automatically generated from equals()",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Hash-based collections require equal objects to return the same hash code. Overriding only equals() can cause logically equal objects to occupy different buckets."
+  },
+  {
+    "source_id": "Q3",
+    "category": "Java",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "Which statement about Java HashMap is correct in the average case?",
+    "options": [
+      {
+        "key": "A",
+        "text": "get() is always O(1)",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "get() is O(log n) for every implementation",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "get() is expected O(1), while collisions can degrade performance",
+        "is_correct": true
+      },
+      {
+        "key": "D",
+        "text": "get() requires sorting the keys first",
+        "is_correct": false
+      }
+    ],
+    "explanation": "HashMap is designed for expected constant-time lookup, but collisions and adversarial distributions can affect performance."
+  },
+  {
+    "source_id": "Q4",
+    "category": "Java",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "What is the primary benefit of Java generics?",
+    "options": [
+      {
+        "key": "A",
+        "text": "They eliminate runtime exceptions completely",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "They provide compile-time type safety and reduce explicit casts",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "They make every collection immutable",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "They guarantee constant-time operations",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Generics enforce compatible types at compile time and reduce unsafe casts."
+  },
+  {
+    "source_id": "Q5",
+    "category": "Java",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "What is the final list?\n\nList<Integer> a = new ArrayList<>();\na.add(10); a.add(20); a.add(30);\na.remove(1);\nSystem.out.println(a);",
+    "options": [
+      {
+        "key": "A",
+        "text": "[10, 20]",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "[20, 30]",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "[10, 30]",
+        "is_correct": true
+      },
+      {
+        "key": "D",
+        "text": "[30]",
+        "is_correct": false
+      }
+    ],
+    "explanation": "For List<Integer>, remove(1) means remove the element at index 1, which is 20."
+  },
+  {
+    "source_id": "Q6",
+    "category": "Java",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "A Java program creates many short-lived objects and experiences frequent garbage collections. Which change is most directly aimed at reducing allocation pressure?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Replace local objects with fewer temporary allocations where practical",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Add more synchronized blocks",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Increase the number of interfaces",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Replace all ArrayLists with LinkedLists",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Reducing unnecessary object creation directly reduces allocation and GC pressure. The other choices do not generally address this root cause."
+  },
+  {
+    "source_id": "Q7",
+    "category": "Java",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Two threads execute this code on a shared variable without synchronization:\n\nfor (int i = 0; i < 1000000; i++) {\n count++;\n}\n\nWhich statement is correct?",
+    "options": [
+      {
+        "key": "A",
+        "text": "2,000,000 is guaranteed",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "A value below 2,000,000 is possible",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "The program cannot compile",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "count is always zero",
+        "is_correct": false
+      }
+    ],
+    "explanation": "count++ is a read-modify-write operation, so concurrent updates can be lost."
+  },
+  {
+    "source_id": "Q8",
+    "category": "Python",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "What does a Python generator primarily provide?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Lazy iteration over produced values",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Automatic multithreading",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Static type checking",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Database transactions",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Generators yield values lazily, allowing iteration without materializing the entire result at once."
+  },
+  {
+    "source_id": "Q9",
+    "category": "Python",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "What is a closure in Python?",
+    "options": [
+      {
+        "key": "A",
+        "text": "A function that remembers variables from its enclosing scope",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "A class with no constructor",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "A thread-safe function",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "A function that can only be called once",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A closure retains access to variables from an enclosing lexical scope even after that outer function has returned."
+  },
+  {
+    "source_id": "Q10",
+    "category": "Python",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What is printed?\n\ndef add(x, items=[]):\n items.append(x)\n return items\n\nprint(add(1))\nprint(add(2))",
+    "options": [
+      {
+        "key": "A",
+        "text": "[1] then [2]",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "[1] then [1, 2]",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "[1, 2] then [1, 2]",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Error",
+        "is_correct": false
+      }
+    ],
+    "explanation": "The mutable default list is created once and reused between calls."
+  },
+  {
+    "source_id": "Q11",
+    "category": "Python",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What does *args allow in a Python function?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Arbitrary positional arguments",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Arbitrary keyword arguments",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Only one optional argument",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Compile-time generics",
+        "is_correct": false
+      }
+    ],
+    "explanation": "*args collects extra positional arguments into a tuple; **kwargs collects keyword arguments into a dictionary."
+  },
+  {
+    "source_id": "Q12",
+    "category": "Python",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "What is the output?\n\nfuncs = [lambda: i for i in range(3)]\nprint([f() for f in funcs])",
+    "options": [
+      {
+        "key": "A",
+        "text": "[0, 1, 2]",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "[2, 2, 2]",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "[1, 2, 3]",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "[0, 0, 0]",
+        "is_correct": false
+      }
+    ],
+    "explanation": "The lambdas capture i by reference/late binding; when called, i has its final value, 2."
+  },
+  {
+    "source_id": "Q13",
+    "category": "Python",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Which statement best describes the CPython GIL?",
+    "options": [
+      {
+        "key": "A",
+        "text": "It prevents all concurrency",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "It allows only one thread at a time to execute Python bytecode in a standard CPython process",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "It prevents multiprocessing",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "It makes I/O-bound programs impossible",
+        "is_correct": false
+      }
+    ],
+    "explanation": "The GIL limits simultaneous execution of Python bytecode by threads in standard CPython, though I/O operations and native extensions can release it."
+  },
+  {
+    "source_id": "Q14",
+    "category": "Python",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "What is the most likely result?\n\ndef deco(fn):\n def wrapper():\n  return fn()\n return wrapper\n\n@deco\ndef greet():\n pass\n\nprint(greet.__name__)",
+    "options": [
+      {
+        "key": "A",
+        "text": "greet",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "wrapper",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "deco",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "None",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Without functools.wraps, the decorated function's metadata refers to the wrapper."
+  },
+  {
+    "source_id": "Q15",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which sorting algorithm has worst-case O(n log n) time and is stable in its standard merge-based implementation?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Merge Sort",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Selection Sort",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Bubble Sort",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Linear Search",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Merge Sort runs in O(n log n) in the worst case and is stable when implemented with the usual merge procedure."
+  },
+  {
+    "source_id": "Q16",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A Quick Sort implementation repeatedly chooses the smallest element as the pivot. For n elements, what is the worst-case complexity?",
+    "options": [
+      {
+        "key": "A",
+        "text": "O(log n)",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "O(n)",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "O(n log n)",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "O(n²)",
+        "is_correct": true
+      }
+    ],
+    "explanation": "Each partition removes only one element, producing a quadratic recurrence."
+  },
+  {
+    "source_id": "Q17",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which data structure is typically used to implement Dijkstra's algorithm efficiently on a sparse graph?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Stack",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Min-priority queue",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "FIFO queue only",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Trie",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A min-priority queue efficiently selects the unvisited vertex with the smallest tentative distance."
+  },
+  {
+    "source_id": "Q18",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A graph has negative edge weights but no negative cycles. Which algorithm should be used for single-source shortest paths?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Dijkstra",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Bellman-Ford",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Prim",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "BFS",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Bellman-Ford supports negative edges and can detect negative cycles."
+  },
+  {
+    "source_id": "Q19",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A topological ordering exists for which kind of graph?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Any undirected graph",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Directed acyclic graph",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Complete graph only",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Weighted graph only",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A DAG has no directed cycles and therefore admits a topological ordering."
+  },
+  {
+    "source_id": "Q20",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Consider a recursive solution to Fibonacci that stores every computed result in a table before returning. What optimization is being used?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Memoization",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Greedy choice",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Hash collision",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Topological sorting",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Memoization stores results of overlapping subproblems to avoid recomputation."
+  },
+  {
+    "source_id": "Q21",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which collision-resolution method stores multiple keys in a bucket, commonly using linked structures or trees?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Separate chaining",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Binary search",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Double recursion",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Topological sorting",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Separate chaining keeps a collection of entries for each hash bucket."
+  },
+  {
+    "source_id": "Q22",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A dynamic array doubles its capacity whenever it becomes full. Over a long sequence of n appends, what is the amortized cost per append?",
+    "options": [
+      {
+        "key": "A",
+        "text": "O(n)",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "O(log n)",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "O(1)",
+        "is_correct": true
+      },
+      {
+        "key": "D",
+        "text": "O(n²)",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Occasional O(n) resizes are spread over many O(1) appends, giving O(1) amortized cost."
+  },
+  {
+    "source_id": "Q23",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "An AVL node z has balance factor +2 and its left child has balance factor -1. Which operation fixes the imbalance?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Single right rotation",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Single left rotation",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Left rotation on the left child followed by right rotation on z",
+        "is_correct": true
+      },
+      {
+        "key": "D",
+        "text": "No rotation",
+        "is_correct": false
+      }
+    ],
+    "explanation": "This is the left-right case, requiring a double rotation."
+  },
+  {
+    "source_id": "Q24",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "For a graph with nonnegative edge weights, why can Dijkstra's algorithm finalize the minimum-distance vertex greedily?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Negative cycles are required",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Once the smallest tentative distance is selected, no later nonnegative extension can make it smaller",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "BFS guarantees the same result",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "All graphs are trees",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Nonnegative edge weights preserve the property that extending a path cannot produce a smaller distance than the already smallest tentative value."
+  },
+  {
+    "source_id": "Q25",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Solve the recurrence: T(n) = 2T(n/2) + n. What is the asymptotic complexity?",
+    "options": [
+      {
+        "key": "A",
+        "text": "O(log n)",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "O(n)",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "O(n log n)",
+        "is_correct": true
+      },
+      {
+        "key": "D",
+        "text": "O(n²)",
+        "is_correct": false
+      }
+    ],
+    "explanation": "By the Master Theorem, a=2 and b=2 gives n log n."
+  },
+  {
+    "source_id": "Q26",
+    "category": "Data Structures & Algorithms",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Which technique is most appropriate for finding a minimum spanning tree of a connected weighted undirected graph?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Prim's or Kruskal's algorithm",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Dijkstra only",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "KMP",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Binary search",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Prim's and Kruskal's algorithms solve the MST problem; Dijkstra solves shortest paths."
+  },
+  {
+    "source_id": "Q27",
+    "category": "OOP & Inheritance",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "Which SOLID principle says a class should have one reason to change?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Open/Closed Principle",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Single Responsibility Principle",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Liskov Substitution Principle",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Dependency Inversion Principle",
+        "is_correct": false
+      }
+    ],
+    "explanation": "SRP states that a class should have one primary responsibility and therefore one reason to change."
+  },
+  {
+    "source_id": "Q28",
+    "category": "OOP & Inheritance",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which statement is correct about this Java declaration?\n\nabstract class Shape {\n abstract double area();\n}\nclass Circle extends Shape {\n double r;\n Circle(double r) { this.r = r; }\n double area() { return Math.PI * r * r; }\n}",
+    "options": [
+      {
+        "key": "A",
+        "text": "Shape can be instantiated directly",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Circle must implement area() to be concrete",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Circle cannot extend Shape",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "area() must be static",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A concrete subclass must implement the inherited abstract method."
+  },
+  {
+    "source_id": "Q29",
+    "category": "OOP & Inheritance",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A subclass overrides a parent method but strengthens its precondition so inputs accepted by the parent are rejected by the child. Which principle is violated?",
+    "options": [
+      {
+        "key": "A",
+        "text": "SRP",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "LSP",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "DRY",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "ISP",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Strengthening preconditions can make a subtype unsafe where the parent type was expected, violating Liskov Substitution."
+  },
+  {
+    "source_id": "Q30",
+    "category": "OOP & Inheritance",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What is the main problem with deep inheritance hierarchies?",
+    "options": [
+      {
+        "key": "A",
+        "text": "They always improve modularity",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "They can create tight coupling and make behavior harder to reason about",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "They prevent polymorphism",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "They eliminate code reuse",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Deep hierarchies increase coupling and make changes propagate through many levels."
+  },
+  {
+    "source_id": "Q31",
+    "category": "OOP & Inheritance",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Which design pattern is most appropriate when an object should notify multiple dependent objects automatically when its state changes?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Singleton",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Observer",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Adapter",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Builder",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Observer establishes a one-to-many dependency so observers are notified of subject state changes."
+  },
+  {
+    "source_id": "Q32",
+    "category": "OOP & Inheritance",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "The diamond problem occurs primarily when:",
+    "options": [
+      {
+        "key": "A",
+        "text": "A class has too many constructors",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Multiple inheritance creates two paths to the same base class",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "A method is private",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "A class contains an array",
+        "is_correct": false
+      }
+    ],
+    "explanation": "The diamond arises when a class inherits the same ancestor through multiple parent paths, creating ambiguity about inherited members."
+  },
+  {
+    "source_id": "Q33",
+    "category": "Agentic & AI",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "What does RAG primarily add to an LLM application?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Retrieval of external or private context before generation",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Automatic GPU overclocking",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Guaranteed factuality",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Removal of all model parameters",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Retrieval-Augmented Generation supplies relevant external context to improve grounded generation."
+  },
+  {
+    "source_id": "Q34",
+    "category": "Agentic & AI",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "An agent follows this loop:\n\nThought -> Tool Call -> Observation -> Next Thought -> Tool Call\n\nWhich agent pattern does this most closely represent?",
+    "options": [
+      {
+        "key": "A",
+        "text": "ReAct",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "MVC",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "ACID",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "FIFO",
+        "is_correct": false
+      }
+    ],
+    "explanation": "ReAct interleaves reasoning with actions and observations."
+  },
+  {
+    "source_id": "Q35",
+    "category": "Agentic & AI",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "When is RAG generally preferable to fine-tuning for frequently changing factual knowledge?",
+    "options": [
+      {
+        "key": "A",
+        "text": "When knowledge changes often and should be updated without retraining the model",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "When no documents exist",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "When latency must always be zero",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "When the model must forget all context",
+        "is_correct": false
+      }
+    ],
+    "explanation": "RAG can update the knowledge source independently of model weights, making it useful for dynamic information."
+  },
+  {
+    "source_id": "Q36",
+    "category": "Agentic & AI",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "An agent is allowed to call a money-transfer API. Which check should occur immediately before the side-effecting action?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Validate authorization, parameters, and policy constraints",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Increase temperature",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Remove logging",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Generate a longer prompt",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Side-effecting tools need authorization and parameter/policy validation."
+  },
+  {
+    "source_id": "Q37",
+    "category": "Agentic & AI",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "An agent repeatedly calls an expensive API because it fails to recognize that a previous tool result is still valid. Which design improvement is most directly relevant?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Add caching/state-aware tool result reuse",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Increase temperature",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Remove all tools",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Fine-tune on random text",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Caching or state-aware reuse prevents redundant calls when the same result remains valid."
+  },
+  {
+    "source_id": "Q38",
+    "category": "Agentic & AI",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which metric is most useful for evaluating whether an agent successfully completed a multi-step task?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Token count alone",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Task success rate under defined test cases",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Prompt length alone",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Number of emojis generated",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Task success rate directly measures whether the agent achieved the intended outcome; other metrics may be secondary diagnostics."
+  },
+  {
+    "source_id": "Q39",
+    "category": "Operating Systems",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "Which scheduling algorithm uses a time quantum?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Round Robin",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "FCFS",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Non-preemptive SJF only",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "FIFO disk scheduling",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Round Robin gives each runnable process a fixed time slice."
+  },
+  {
+    "source_id": "Q40",
+    "category": "Operating Systems",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A system has processes P1 and P2. P1 holds resource R1 and waits for R2; P2 holds R2 and waits for R1. Which deadlock condition is directly visible?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Circular wait",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Paging",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Starvation only",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Fragmentation",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Each process waits for a resource held by the other, forming a cycle."
+  },
+  {
+    "source_id": "Q41",
+    "category": "Operating Systems",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What is a page fault?",
+    "options": [
+      {
+        "key": "A",
+        "text": "A CPU arithmetic error",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "A reference to a virtual-memory page not currently in physical memory",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "A network timeout",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "A corrupted source file",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A page fault occurs when the required page is not resident in physical memory and must be handled by the OS."
+  },
+  {
+    "source_id": "Q42",
+    "category": "Operating Systems",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which synchronization primitive is commonly used to control access to a shared resource?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Semaphore",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "DNS",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Compiler",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Cache line only",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Semaphores coordinate concurrent access and can be used for mutual exclusion or signaling."
+  },
+  {
+    "source_id": "Q43",
+    "category": "Operating Systems",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "A process repeatedly accesses a small working set of pages. Which replacement strategy is most likely to exploit locality effectively?",
+    "options": [
+      {
+        "key": "A",
+        "text": "LRU",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Random replacement",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Always replace page 0",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Replace the newest page only",
+        "is_correct": false
+      }
+    ],
+    "explanation": "LRU approximates locality by evicting pages that have not been used recently."
+  },
+  {
+    "source_id": "Q44",
+    "category": "Operating Systems",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "A system has 3 page frames and the reference string causes Belady's anomaly under FIFO. What does the anomaly mean?",
+    "options": [
+      {
+        "key": "A",
+        "text": "More frames can sometimes increase FIFO page faults",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "More frames always reduce FIFO page faults",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "FIFO becomes LRU",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Paging is disabled",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Belady's anomaly is the counterintuitive increase in page faults with more frames for certain FIFO reference strings."
+  },
+  {
+    "source_id": "Q45",
+    "category": "DBMS",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "Which ACID property means a transaction's changes are treated as an all-or-nothing unit?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Atomicity",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Consistency",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Isolation",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Durability",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Atomicity ensures either all transaction operations commit or none do."
+  },
+  {
+    "source_id": "Q46",
+    "category": "DBMS",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What does this SQL query do?\n\nSELECT dept, AVG(salary)\nFROM Employee\nGROUP BY dept\nHAVING AVG(salary) > 80000;",
+    "options": [
+      {
+        "key": "A",
+        "text": "Filters individual rows before grouping",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Returns departments whose average salary exceeds 80000",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Sorts departments by salary",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Counts employees",
+        "is_correct": false
+      }
+    ],
+    "explanation": "GROUP BY forms department groups and HAVING filters those groups using the aggregate."
+  },
+  {
+    "source_id": "Q47",
+    "category": "DBMS",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What is the main purpose of an index?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Improve data retrieval speed for suitable queries",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Guarantee no duplicate rows in every table",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Replace transactions",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Eliminate storage costs",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Indexes accelerate access paths for supported query patterns, at the cost of storage and write overhead."
+  },
+  {
+    "source_id": "Q48",
+    "category": "DBMS",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A relation is in 2NF if it is in 1NF and:",
+    "options": [
+      {
+        "key": "A",
+        "text": "It has no foreign keys",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "It has no partial dependency of a non-key attribute on part of a composite candidate key",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "It has no indexes",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Every column is nullable",
+        "is_correct": false
+      }
+    ],
+    "explanation": "2NF removes partial dependencies on a subset of a composite key."
+  },
+  {
+    "source_id": "Q49",
+    "category": "DBMS",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Which SQL query correctly finds departments whose average salary exceeds 80000?",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT dept FROM Employee WHERE AVG(salary)>80000 GROUP BY dept;",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "SELECT dept FROM Employee GROUP BY dept HAVING AVG(salary)>80000;",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "SELECT dept FROM Employee HAVING salary>80000;",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "SELECT dept FROM Employee ORDER BY AVG(salary)>80000;",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Aggregate filters on grouped results belong in HAVING after GROUP BY."
+  },
+  {
+    "source_id": "Q50",
+    "category": "DBMS",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "Under snapshot isolation, two concurrent transactions can both read the same snapshot and then update different rows. Which anomaly can still occur in some systems?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Write skew",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Syntax error",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Lexical scoping",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Stack overflow",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Snapshot isolation can allow write skew when transactions make decisions based on a shared snapshot but update disjoint rows."
+  },
+  {
+    "source_id": "Q51",
+    "category": "Computer Networks",
+    "difficulty": "Easy",
+    "marks": 2,
+    "question_text": "Which protocol resolves a domain name such as example.com to an IP address?",
+    "options": [
+      {
+        "key": "A",
+        "text": "DNS",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "FTP",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "SSH",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "SMTP",
+        "is_correct": false
+      }
+    ],
+    "explanation": "DNS maps domain names to IP addresses and other records."
+  },
+  {
+    "source_id": "Q52",
+    "category": "Computer Networks",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "Which transport protocol provides reliable, ordered byte-stream delivery?",
+    "options": [
+      {
+        "key": "A",
+        "text": "UDP",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "TCP",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "IP",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "ARP",
+        "is_correct": false
+      }
+    ],
+    "explanation": "TCP provides reliable, ordered delivery with retransmission and congestion control."
+  },
+  {
+    "source_id": "Q53",
+    "category": "Computer Networks",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "What is the main purpose of HTTPS compared with HTTP?",
+    "options": [
+      {
+        "key": "A",
+        "text": "It adds TLS protection for confidentiality, integrity, and server authentication",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "It removes DNS",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "It guarantees zero latency",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "It replaces TCP with UDP in all cases",
+        "is_correct": false
+      }
+    ],
+    "explanation": "HTTPS uses HTTP over TLS, protecting data in transit and authenticating the server via certificates."
+  },
+  {
+    "source_id": "Q54",
+    "category": "Computer Networks",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A router has these routes:\n\n10.0.0.0/8\n10.1.0.0/16\n\nFor destination 10.1.2.5, which route is selected?",
+    "options": [
+      {
+        "key": "A",
+        "text": "10.0.0.0/8",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "10.1.0.0/16",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Both equally",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Neither",
+        "is_correct": false
+      }
+    ],
+    "explanation": "IP routing uses longest-prefix match, so /16 is more specific than /8."
+  },
+  {
+    "source_id": "Q55",
+    "category": "Computer Networks",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A TCP sender detects congestion through repeated packet loss. Which behavior is generally expected from congestion control?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Increase sending rate without limit",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Reduce the congestion window and adjust transmission rate",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Disable acknowledgements",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Switch automatically to DNS",
+        "is_correct": false
+      }
+    ],
+    "explanation": "TCP congestion control responds to loss as a congestion signal by reducing the sending rate."
+  },
+  {
+    "source_id": "Q56",
+    "category": "Computer Networks",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A client can resolve a hostname using one DNS resolver but not another. Which is the most plausible explanation?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Different resolver caches, forwarding paths, or DNS policies",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "TCP cannot carry DNS",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "HTTP always controls DNS results",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "MAC addresses determine domain ownership",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Resolvers can have different cached records, upstream paths, filtering policies, or propagation states."
+  },
+  {
+    "source_id": "Q57",
+    "category": "System Design & SE",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A web service has a single application server and traffic spikes unpredictably. Which component is a common first step for distributing requests across multiple servers?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Load balancer",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Compiler",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Git repository",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Unit test",
+        "is_correct": false
+      }
+    ],
+    "explanation": "A load balancer distributes incoming requests across available application instances."
+  },
+  {
+    "source_id": "Q58",
+    "category": "System Design & SE",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A catalog service reads the same product data thousands of times per minute but updates it rarely. Which design most directly reduces repeated database reads?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Cache frequently accessed data with an appropriate invalidation/TTL policy",
+        "is_correct": true
+      },
+      {
+        "key": "B",
+        "text": "Remove all indexes",
+        "is_correct": false
+      },
+      {
+        "key": "C",
+        "text": "Disable database transactions",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Increase request payload size",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Caching can reduce repeated database access, while TTL/invalidation handles freshness."
+  },
+  {
+    "source_id": "Q59",
+    "category": "System Design & SE",
+    "difficulty": "Medium",
+    "marks": 2,
+    "question_text": "A service must remain available when one application instance fails. Which design best supports this requirement?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Single instance with no backup",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Multiple instances behind health-aware load balancing",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "One server with a larger monitor",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Client-side hard-coded IP only",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Redundancy plus health checks and load balancing allows traffic to continue when an instance fails."
+  },
+  {
+    "source_id": "Q60",
+    "category": "System Design & SE",
+    "difficulty": "Hard",
+    "marks": 2,
+    "question_text": "In software testing, what is the strongest reason to use integration tests in addition to unit tests?",
+    "options": [
+      {
+        "key": "A",
+        "text": "Unit tests can prove every production behavior",
+        "is_correct": false
+      },
+      {
+        "key": "B",
+        "text": "Integration tests verify interactions between components that may fail despite isolated units passing",
+        "is_correct": true
+      },
+      {
+        "key": "C",
+        "text": "Integration tests replace all unit tests",
+        "is_correct": false
+      },
+      {
+        "key": "D",
+        "text": "Integration tests eliminate the need for monitoring",
+        "is_correct": false
+      }
+    ],
+    "explanation": "Component interactions, contracts, configuration, and data flows can fail even when individual units pass their tests."
+  }
+]
