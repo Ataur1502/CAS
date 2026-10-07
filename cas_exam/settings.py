@@ -7,7 +7,16 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-cas-exam-secre
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get(
+        'ALLOWED_HOSTS',
+        '*'
+    ).split(',') if h.strip()
+]
+if '*' not in ALLOWED_HOSTS:
+    for default_host in ['cas.atleelabs.tech', 'www.cas.atleelabs.tech', '136.64.188.177', 'localhost', '127.0.0.1', 'backend', 'nginx']:
+        if default_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(default_host)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -111,7 +120,13 @@ REST_FRAMEWORK = {
 # CORS & CSRF Settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = [
+
+DEFAULT_CSRF_TRUSTED_ORIGINS = [
+    'https://cas.atleelabs.tech',
+    'http://cas.atleelabs.tech',
+    'https://www.cas.atleelabs.tech',
+    'http://www.cas.atleelabs.tech',
+    'http://136.64.188.177',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
@@ -119,3 +134,15 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+_env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if _env_csrf:
+    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(
+        DEFAULT_CSRF_TRUSTED_ORIGINS + [o.strip() for o in _env_csrf.split(',') if o.strip()]
+    ))
+else:
+    CSRF_TRUSTED_ORIGINS = DEFAULT_CSRF_TRUSTED_ORIGINS
+
+# Reverse proxy SSL settings for Nginx / HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
