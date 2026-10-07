@@ -703,12 +703,21 @@ def admin_students_view(request, student_id=None):
 
 
 class AdminQuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.all().prefetch_related('options').order_by('-id')
+    queryset = Question.objects.all().prefetch_related('options').order_by('id')
     serializer_class = AdminQuestionSerializer
     permission_classes = [IsAdminUser]
 
+    @property
+    def paginator(self):
+        if self.request.query_params.get('all') in ['true', '1', True]:
+            return None
+        return super().paginator
+
     def get_queryset(self):
         qs = super().get_queryset()
+        q_type = self.request.query_params.get('question_type')
+        if q_type:
+            qs = qs.filter(question_type=q_type.upper())
         category = self.request.query_params.get('category')
         if category:
             qs = qs.filter(category__iexact=category)

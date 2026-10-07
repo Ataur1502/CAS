@@ -35,7 +35,8 @@ interface ExamItem {
 export const Exams: React.FC = () => {
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  const [questionSearch, setQuestionSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,11 +65,12 @@ export const Exams: React.FC = () => {
       const [examsRes, deptsRes, qRes] = await Promise.all([
         api.getAdminExams(),
         api.getDepartments(),
-        api.getAdminQuestions(),
+        api.getAdminQuestions({ all: true }),
       ]);
       setExams(examsRes.results || examsRes);
       setDepartments(deptsRes);
-      setAvailableQuestions(qRes.results || qRes);
+      const questionsList = Array.isArray(qRes) ? qRes : (qRes.results || []);
+      setAllQuestions(questionsList);
     } catch (err: any) {
       setError(err.message || 'Failed to load examinations data.');
     } finally {
@@ -100,7 +102,10 @@ export const Exams: React.FC = () => {
 
     setIsActive(true);
     setSelectedDepts(departments.map((d) => d.id)); // Default to both
-    setSelectedQuestions([]);
+    // Pre-select all 60 MCQ questions by default:
+    const mcqQuestions = allQuestions.filter((q) => (q.question_type || 'MCQ') === 'MCQ');
+    setSelectedQuestions(mcqQuestions.map((q) => q.id));
+    setQuestionSearch('');
     setModalError(null);
     setIsModalOpen(true);
   };
@@ -109,10 +114,11 @@ export const Exams: React.FC = () => {
     setEditingExam(exam);
     setTitle(exam.title);
     setDescription(exam.description);
-    setExamType(exam.exam_type || 'MCQ');
+    const type = exam.exam_type || 'MCQ';
+    setExamType(type);
     setDurationMinutes(exam.duration_minutes);
-    setQuestionsPerAttempt(exam.questions_per_attempt || 30);
-    setMaxViolations(exam.max_violations || 6);
+    setQuestionsPerAttempt(exam.questions_per_attempt || (type === 'CODING' ? 3 : 30));
+    setMaxViolations(type === 'CODING' ? 0 : (exam.max_violations ?? 6));
 
     const toLocalISO = (isoStr: string) => {
       const d = new Date(isoStr);
@@ -128,8 +134,26 @@ export const Exams: React.FC = () => {
     const qIds = (exam.exam_questions || []).map((eq: any) => eq.id);
     setSelectedQuestions(qIds);
 
+    setQuestionSearch('');
     setModalError(null);
     setIsModalOpen(true);
+  };
+
+  const handleExamTypeChange = (newType: 'MCQ' | 'CODING') => {
+    setExamType(newType);
+    if (newType === 'CODING') {
+      setQuestionsPerAttempt(3);
+      setMaxViolations(0);
+      setDurationMinutes(60);
+      const codingQs = allQuestions.filter((q) => q.question_type === 'CODING');
+      setSelectedQuestions(codingQs.map((q) => q.id));
+    } else {
+      setQuestionsPerAttempt(30);
+      setMaxViolations(6);
+      setDurationMinutes(30);
+      const mcqQs = allQuestions.filter((q) => (q.question_type || 'MCQ') === 'MCQ');
+      setSelectedQuestions(mcqQs.map((q) => q.id));
+    }
   };
 
   const handleDeptToggle = (deptId: number) => {
@@ -175,7 +199,7 @@ export const Exams: React.FC = () => {
       return;
     }
 
-    if (selectedQuestions.length > 0 && selectedQuestions.length < questionsPerAttempt) {
+    if (selectedQuestions.length < questionsPerAttempt) {
       setModalError(
         `Assigned question pool size (${selectedQuestions.length}) must be at least the questions per attempt (${questionsPerAttempt}).`
       );
@@ -219,9 +243,40 @@ export const Exams: React.FC = () => {
     }
   };
 
+  const formatQuestionTitle = (text: string) => {
+    if (!text) return '';
+    const firstLine = text.split('\n')[0].replace(/^#+\s*/, '').trim();
+    return firstLine || text.slice(0, 80);
+  };
+
+  // Questions pool matching the active examType
+  const displayedPoolQuestions = allQuestions.filter(
+    (q) => (q.question_type || 'MCQ') === examType
+  );
+
+  // Search filtered questions
+  const displayedQuestions = displayedPoolQuestions.filter((q) => {
+    if (!questionSearch.trim()) return true;
+    const term = questionSearch.toLowerCase();
+    return (
+      q.question_text.toLowerCase().includes(term) ||
+      (q.category && q.category.toLowerCase().includes(term)) ||
+      (q.difficulty && q.difficulty.toLowerCase().includes(term))
+    );
+  });
+
+  const handleSelectAllDisplayed = () => {
+    const poolIds = displayedPoolQuestions.map((q) => q.id);
+    setSelectedQuestions(poolIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedQuestions([]);
+  };
+
   // Calculate live question & marks summary for selected questions in modal
   const selectedQuestionObjects = selectedQuestions
-    .map((qId) => availableQuestions.find((q) => q.id === qId))
+    .map((qId) => allQuestions.find((q) => q.id === qId))
     .filter(Boolean) as Question[];
 
   const calculatedTotalMarks = selectedQuestionObjects.reduce((acc, q) => acc + q.marks, 0);
@@ -412,7 +467,7 @@ export const Exams: React.FC = () => {
                     </label>
                     <select
                       value={examType}
-                      onChange={(e) => setExamType(e.target.value as 'MCQ' | 'CODING')}
+                      onChange={(e) => handleExamTypeChange(e.target.value as 'MCQ' | 'CODING')}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 bg-white"
                     >
                       <option value="MCQ">📝 MCQ Quiz</option>
@@ -522,23 +577,70 @@ export const Exams: React.FC = () => {
 
                 {/* Question Selection & Reordering */}
                 <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold uppercase text-slate-700">
-                      Assign Questions from Question Bank
-                    </label>
-                    <div className="text-xs font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">
-                      Total: {selectedQuestions.length} Questions | {calculatedTotalMarks} Marks
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
+                        Assign Questions from Question Bank
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          {displayedPoolQuestions.length} available {examType} questions
+                        </span>
+                      </label>
+                      <p className="text-[11px] text-slate-500">
+                        {examType === 'CODING'
+                          ? 'Select coding problems for this assessment (3 questions will be randomly served to each student).'
+                          : 'Select MCQ questions for this exam (30 questions will be randomly served to each student).'}
+                      </p>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllDisplayed}
+                        className="px-2.5 py-1 text-xs font-semibold rounded bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition"
+                      >
+                        Select All ({displayedPoolQuestions.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAll}
+                        className="px-2.5 py-1 text-xs font-semibold rounded bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition"
+                      >
+                        Deselect All
+                      </button>
+                      <div className="text-xs font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200 whitespace-nowrap">
+                        Selected: {selectedQuestions.length} Qs | {calculatedTotalMarks} Marks
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search box for questions */}
+                  <div className="mb-2">
+                    <input
+                      type="text"
+                      placeholder={`Search ${displayedPoolQuestions.length} ${examType} questions by keyword or topic...`}
+                      value={questionSearch}
+                      onChange={(e) => setQuestionSearch(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 bg-slate-50"
+                    />
                   </div>
 
                   {/* Selected questions list with ordering */}
                   {selectedQuestions.length > 0 && (
-                    <div className="mb-3 max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50 p-2">
-                      <div className="text-xs font-semibold text-slate-500 mb-1 px-1">Selected Order:</div>
+                    <div className="mb-3 max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50 p-2">
+                      <div className="text-[11px] font-semibold text-slate-500 mb-1 px-1 flex items-center justify-between">
+                        <span>Selected Order ({selectedQuestions.length} selected):</span>
+                        <span className="text-[10px] text-slate-400">Order used if pool equals attempt size</span>
+                      </div>
                       {selectedQuestionObjects.map((q, idx) => (
-                        <div key={q.id} className="flex items-center justify-between py-1.5 px-2 bg-white rounded my-1 text-xs">
-                          <span className="font-bold text-slate-700 w-6">#{idx + 1}</span>
-                          <span className="flex-1 truncate mx-2 text-slate-800">{q.question_text}</span>
+                        <div key={q.id} className="flex items-center justify-between py-1 px-2 bg-white rounded my-0.5 text-xs">
+                          <span className="font-bold text-slate-600 w-6">#{idx + 1}</span>
+                          <span className="flex-1 truncate mx-2 text-slate-800 font-medium" title={q.question_text}>
+                            {formatQuestionTitle(q.question_text)}
+                          </span>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mr-2 ${
+                            q.question_type === 'CODING' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {q.question_type || 'MCQ'}
+                          </span>
                           <span className="text-slate-500 mr-2 font-mono font-medium">{q.marks}m</span>
                           <div className="flex items-center space-x-1">
                             <button
@@ -566,21 +668,43 @@ export const Exams: React.FC = () => {
                   )}
 
                   {/* Available questions checkboxes */}
-                  <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 p-2">
-                    {availableQuestions.map((q) => (
-                      <label key={q.id} className="flex items-start space-x-2 py-2 px-2 hover:bg-slate-50 cursor-pointer text-xs rounded">
-                        <input
-                          type="checkbox"
-                          checked={selectedQuestions.includes(q.id)}
-                          onChange={() => handleQuestionToggle(q.id)}
-                          className="mt-0.5 h-3.5 w-3.5 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
-                        />
-                        <div className="flex-1">
-                          <span className="font-medium text-slate-800">{q.question_text}</span>
-                          <span className="text-slate-400 ml-2">({q.category || 'General'} - {q.marks} marks)</span>
-                        </div>
-                      </label>
-                    ))}
+                  <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 p-2 bg-white">
+                    {displayedQuestions.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        No {examType} questions found matching "{questionSearch}".
+                      </div>
+                    ) : (
+                      displayedQuestions.map((q) => (
+                        <label key={q.id} className="flex items-start space-x-2 py-2 px-2 hover:bg-slate-50 cursor-pointer text-xs rounded transition">
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestions.includes(q.id)}
+                            onChange={() => handleQuestionToggle(q.id)}
+                            className="mt-0.5 h-3.5 w-3.5 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-slate-800">
+                                {formatQuestionTitle(q.question_text)}
+                              </span>
+                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold ${
+                                q.question_type === 'CODING' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-100 text-blue-700 border border-blue-200'
+                              }`}>
+                                {q.question_type || 'MCQ'}
+                              </span>
+                              <span className="text-slate-400 text-[11px]">
+                                ({q.category || 'General'}{q.difficulty ? ` • ${q.difficulty}` : ''} • {q.marks} marks)
+                              </span>
+                            </div>
+                            {q.question_text.includes('\n') && (
+                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                {q.question_text.split('\n').filter(Boolean).slice(1, 2).join(' ')}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))
+                    )}
                   </div>
                 </div>
 

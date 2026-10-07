@@ -284,11 +284,13 @@ export const api = {
       body: JSON.stringify({ active }),
     }),
 
-  getAdminQuestions: (params: { category?: string; difficulty?: string; search?: string } = {}) => {
+  getAdminQuestions: (params: { category?: string; difficulty?: string; search?: string; question_type?: string; all?: boolean } = {}) => {
     const q = new URLSearchParams();
     if (params.category) q.append('category', params.category);
     if (params.difficulty) q.append('difficulty', params.difficulty);
     if (params.search) q.append('search', params.search);
+    if (params.question_type) q.append('question_type', params.question_type);
+    if (params.all) q.append('all', 'true');
     return apiRequest<any>(`/admin/questions/?${q.toString()}`);
   },
 

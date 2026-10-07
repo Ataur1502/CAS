@@ -19,6 +19,7 @@ export const Questions: React.FC = () => {
   // Search & Filter
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,14 +46,17 @@ export const Questions: React.FC = () => {
       const res = await api.getAdminQuestions({
         search,
         category: categoryFilter,
+        question_type: typeFilter || undefined,
+        all: true,
       });
-      setQuestions(res.results || res);
+      const qList = Array.isArray(res) ? res : (res.results || []);
+      setQuestions(qList);
     } catch (err: any) {
       setError(err.message || 'Failed to load question bank.');
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, typeFilter]);
 
   useEffect(() => {
     fetchQuestions();
@@ -154,7 +158,7 @@ export const Questions: React.FC = () => {
               <HelpCircle className="h-6 w-6 mr-2 text-indigo-700" /> Question Bank
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Curate and manage MCQ items for university assessments ({questions.length} total questions)
+              Curate and manage MCQ and Coding items for university assessments ({questions.length} total questions)
             </p>
           </div>
           <button
@@ -180,13 +184,25 @@ export const Questions: React.FC = () => {
 
           <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
             <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="py-2 px-3 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+            >
+              <option value="">All Types</option>
+              <option value="MCQ">📝 MCQ Quiz</option>
+              <option value="CODING">💻 Practical Coding</option>
+            </select>
+            <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="py-2 px-3 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="py-2 px-3 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
             >
               <option value="">All Categories</option>
               <option value="Cyber Security">Cyber Security</option>
               <option value="IoT">IoT</option>
+              <option value="Algorithms">Algorithms</option>
+              <option value="Data Structures">Data Structures</option>
+              <option value="Object-Oriented Programming">Object-Oriented Programming</option>
             </select>
           </div>
         </div>
@@ -216,9 +232,16 @@ export const Questions: React.FC = () => {
                 className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition"
               >
                 <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                     <span className="font-bold text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
                       #{idx + 1}
+                    </span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${
+                      q.question_type === 'CODING'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                    }`}>
+                      {q.question_type === 'CODING' ? '💻 Coding' : '📝 MCQ'}
                     </span>
                     {q.category && (
                       <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-100">
@@ -248,39 +271,53 @@ export const Questions: React.FC = () => {
                   </div>
                 </div>
 
-                <h3 className="text-base font-medium text-slate-900 mb-4">{q.question_text}</h3>
+                <h3 className="text-base font-medium text-slate-900 mb-4 whitespace-pre-line">{q.question_text}</h3>
 
-                {/* Options Grid (Admin views correct answer) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  {q.options.map((opt) => (
-                    <div
-                      key={opt.id || opt.option_key}
-                      className={`p-3 rounded-lg border flex items-center justify-between ${
-                        opt.is_correct
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold'
-                          : 'bg-slate-50 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                            opt.is_correct
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          {opt.option_key}
-                        </span>
-                        <span>{opt.option_text}</span>
-                      </div>
-                      {opt.is_correct && (
-                        <span className="flex items-center text-xs font-bold text-emerald-700">
-                          <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Correct Key
-                        </span>
-                      )}
+                {/* Options Grid for MCQ, or Info Box for Coding */}
+                {q.question_type === 'CODING' ? (
+                  <div className="p-3.5 rounded-lg border border-purple-200 bg-purple-50/50 flex items-center justify-between text-xs text-purple-900">
+                    <div>
+                      <span className="font-bold">💻 Practical Coding Assessment Problem</span>
+                      <p className="text-[11px] text-purple-700 mt-0.5">Students code locally and submit source file (.py, .cpp, .c, .java, .js, .ts).</p>
                     </div>
-                  ))}
-                </div>
+                    {q.difficulty && (
+                      <span className="px-2 py-0.5 rounded font-semibold text-[11px] bg-purple-100 text-purple-800 border border-purple-200">
+                        {q.difficulty}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    {q.options.map((opt) => (
+                      <div
+                        key={opt.id || opt.option_key}
+                        className={`p-3 rounded-lg border flex items-center justify-between ${
+                          opt.is_correct
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold'
+                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                              opt.is_correct
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {opt.option_key}
+                          </span>
+                          <span>{opt.option_text}</span>
+                        </div>
+                        {opt.is_correct && (
+                          <span className="flex items-center text-xs font-bold text-emerald-700">
+                            <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Correct Key
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
