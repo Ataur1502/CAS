@@ -142,11 +142,54 @@ class ExamAttempt(models.Model):
         return f"{self.student.roll_number} - {self.exam.title} ({self.status})"
 
 
+def student_submission_upload_path(instance, filename):
+    """
+    Saves student submitted coding files in the format:
+      <question_number>/<roll_number>/<filename>
+    e.g. for student 2311cs040156 uploading question 3:
+      3/2311cs040156/solution.py
+    and for question 9:
+      9/2311cs040156/solution.py
+    """
+    import os, re
+    roll_number = 'unknown_student'
+    if hasattr(instance, 'attempt') and instance.attempt:
+        student = getattr(instance.attempt, 'student', None)
+        if student and getattr(student, 'roll_number', None):
+            roll_number = str(student.roll_number).strip()
+
+    q_folder = None
+    question = getattr(instance, 'question', None)
+    if not question and getattr(instance, 'question_id', None):
+        try:
+            from core.models import Question as QModel
+            question = QModel.objects.filter(id=instance.question_id).first()
+        except Exception:
+            pass
+
+    if question:
+        src = getattr(question, 'source_id', '') or ''
+        m = re.search(r'\d+', src)
+        if m:
+            q_folder = str(int(m.group(0)))
+        else:
+            q_text = getattr(question, 'question_text', '') or ''
+            m2 = re.search(r'(?:Q|Question\s*|#+\s*)(\d+)', q_text, re.IGNORECASE)
+            if m2:
+                q_folder = str(int(m2.group(1)))
+
+    if not q_folder:
+        q_folder = str(getattr(instance, 'question_id', 'unknown_question'))
+
+    clean_filename = os.path.basename(filename)
+    return f"{q_folder}/{roll_number}/{clean_filename}"
+
+
 class StudentAnswer(models.Model):
     attempt = models.ForeignKey(ExamAttempt, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='student_answers')
     selected_option = models.ForeignKey(Option, on_delete=models.SET_NULL, null=True, blank=True)
-    uploaded_file = models.FileField(upload_to='submissions/%Y/%m/', null=True, blank=True)
+    uploaded_file = models.FileField(upload_to=student_submission_upload_path, null=True, blank=True)
     file_name = models.CharField(max_length=255, blank=True, default='')
     file_size = models.PositiveIntegerField(default=0)
     answered_at = models.DateTimeField(auto_now=True)

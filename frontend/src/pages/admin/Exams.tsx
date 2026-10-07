@@ -10,7 +10,8 @@ import {
   X,
   AlertCircle,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Search
 } from 'lucide-react';
 
 interface ExamItem {
@@ -37,6 +38,7 @@ export const Exams: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [questionSearch, setQuestionSearch] = useState('');
+  const [showSelectedOrder, setShowSelectedOrder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +108,7 @@ export const Exams: React.FC = () => {
     const mcqQuestions = allQuestions.filter((q) => (q.question_type || 'MCQ') === 'MCQ');
     setSelectedQuestions(mcqQuestions.map((q) => q.id));
     setQuestionSearch('');
+    setShowSelectedOrder(false);
     setModalError(null);
     setIsModalOpen(true);
   };
@@ -135,6 +138,7 @@ export const Exams: React.FC = () => {
     setSelectedQuestions(qIds);
 
     setQuestionSearch('');
+    setShowSelectedOrder(false);
     setModalError(null);
     setIsModalOpen(true);
   };
@@ -411,330 +415,433 @@ export const Exams: React.FC = () => {
 
         {/* Create / Edit Exam Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white max-w-3xl w-full rounded-2xl p-6 shadow-2xl border border-slate-200 my-8">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
-                <h3 className="text-lg font-bold text-slate-900">
-                  {editingExam ? 'Edit Examination' : 'Create Examination'}
-                </h3>
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+            <div className="bg-white max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+                <div className="flex items-center space-x-2.5">
+                  <span className={`p-2 rounded-lg ${examType === 'CODING' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'}`}>
+                    <FileText className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      {editingExam ? 'Edit Examination' : 'Create Examination'}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Configure schedule, eligible cohorts, and question allocation
+                    </p>
+                  </div>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {modalError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                  {modalError}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveExam} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    Exam Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Cyber Security Fundamentals Midterm"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief description or student instructions..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      Exam Type
-                    </label>
-                    <select
-                      value={examType}
-                      onChange={(e) => handleExamTypeChange(e.target.value as 'MCQ' | 'CODING')}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 bg-white"
-                    >
-                      <option value="MCQ">📝 MCQ Quiz</option>
-                      <option value="CODING">💻 Practical Coding (File Upload)</option>
-                    </select>
-                    <span className="text-[10px] text-slate-500">
-                      {examType === 'CODING' ? 'Local IDE allowed, source file upload' : 'Online MCQ test with violation tracking'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      Duration (Mins)
-                    </label>
-                    <input
-                      type="number"
-                      min="5"
-                      max="300"
-                      required
-                      value={durationMinutes}
-                      onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      Questions / Student
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="300"
-                      required
-                      value={questionsPerAttempt}
-                      onChange={(e) => setQuestionsPerAttempt(parseInt(e.target.value, 10))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                    />
-                    <span className="text-[10px] text-slate-400">Randomly selected from pool</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1" title="Violations allowed before automatic submission">
-                      Max Violations
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="20"
-                      required
-                      disabled={examType === 'CODING'}
-                      value={examType === 'CODING' ? 0 : maxViolations}
-                      onChange={(e) => setMaxViolations(parseInt(e.target.value, 10) || 6)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 disabled:bg-slate-100 disabled:text-slate-400"
-                    />
-                    <span className="text-[10px] text-slate-400">
-                      {examType === 'CODING' ? 'Disabled for coding' : '5–7 strikes (lenient)'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      Start Datetime
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={startDatetime}
-                      onChange={(e) => setStartDatetime(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                      End Datetime
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={endDatetime}
-                      onChange={(e) => setEndDatetime(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                    />
-                  </div>
-                </div>
-
-                {/* Target Departments */}
-                <div className="pt-2">
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-2">
-                    Target Departments (Eligible Cohorts)
-                  </label>
-                  <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    {departments.map((dept) => (
-                      <label key={dept.id} className="flex items-center space-x-2 text-sm text-slate-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedDepts.includes(dept.id)}
-                          onChange={() => handleDeptToggle(dept.id)}
-                          className="h-4 w-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
-                        />
-                        <span>{dept.name} (<strong>{dept.code}</strong>)</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Question Selection & Reordering */}
-                <div className="pt-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-                        Assign Questions from Question Bank
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                          {displayedPoolQuestions.length} available {examType} questions
-                        </span>
-                      </label>
-                      <p className="text-[11px] text-slate-500">
-                        {examType === 'CODING'
-                          ? 'Select coding problems for this assessment (3 questions will be randomly served to each student).'
-                          : 'Select MCQ questions for this exam (30 questions will be randomly served to each student).'}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={handleSelectAllDisplayed}
-                        className="px-2.5 py-1 text-xs font-semibold rounded bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition"
-                      >
-                        Select All ({displayedPoolQuestions.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDeselectAll}
-                        className="px-2.5 py-1 text-xs font-semibold rounded bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 transition"
-                      >
-                        Deselect All
-                      </button>
-                      <div className="text-xs font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200 whitespace-nowrap">
-                        Selected: {selectedQuestions.length} Qs | {calculatedTotalMarks} Marks
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Search box for questions */}
-                  <div className="mb-2">
-                    <input
-                      type="text"
-                      placeholder={`Search ${displayedPoolQuestions.length} ${examType} questions by keyword or topic...`}
-                      value={questionSearch}
-                      onChange={(e) => setQuestionSearch(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 bg-slate-50"
-                    />
-                  </div>
-
-                  {/* Selected questions list with ordering */}
-                  {selectedQuestions.length > 0 && (
-                    <div className="mb-3 max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50 p-2">
-                      <div className="text-[11px] font-semibold text-slate-500 mb-1 px-1 flex items-center justify-between">
-                        <span>Selected Order ({selectedQuestions.length} selected):</span>
-                        <span className="text-[10px] text-slate-400">Order used if pool equals attempt size</span>
-                      </div>
-                      {selectedQuestionObjects.map((q, idx) => (
-                        <div key={q.id} className="flex items-center justify-between py-1 px-2 bg-white rounded my-0.5 text-xs">
-                          <span className="font-bold text-slate-600 w-6">#{idx + 1}</span>
-                          <span className="flex-1 truncate mx-2 text-slate-800 font-medium" title={q.question_text}>
-                            {formatQuestionTitle(q.question_text)}
-                          </span>
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mr-2 ${
-                            q.question_type === 'CODING' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {q.question_type || 'MCQ'}
-                          </span>
-                          <span className="text-slate-500 mr-2 font-mono font-medium">{q.marks}m</span>
-                          <div className="flex items-center space-x-1">
-                            <button
-                              type="button"
-                              onClick={() => moveQuestion(idx, 'UP')}
-                              disabled={idx === 0}
-                              className="p-0.5 rounded hover:bg-slate-100 disabled:opacity-30"
-                              title="Move up"
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveQuestion(idx, 'DOWN')}
-                              disabled={idx === selectedQuestions.length - 1}
-                              className="p-0.5 rounded hover:bg-slate-100 disabled:opacity-30"
-                              title="Move down"
-                            >
-                              <ArrowDown className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+              {/* Scrollable Modal Form Body */}
+              <form onSubmit={handleSaveExam} className="flex flex-col flex-1 overflow-hidden">
+                <div className="px-6 py-5 overflow-y-auto flex-1 space-y-5">
+                  {modalError && (
+                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 text-red-500" />
+                      {modalError}
                     </div>
                   )}
 
-                  {/* Available questions checkboxes */}
-                  <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 p-2 bg-white">
-                    {displayedQuestions.length === 0 ? (
-                      <div className="py-6 text-center text-xs text-slate-400">
-                        No {examType} questions found matching "{questionSearch}".
-                      </div>
-                    ) : (
-                      displayedQuestions.map((q) => (
-                        <label key={q.id} className="flex items-start space-x-2 py-2 px-2 hover:bg-slate-50 cursor-pointer text-xs rounded transition">
-                          <input
-                            type="checkbox"
-                            checked={selectedQuestions.includes(q.id)}
-                            onChange={() => handleQuestionToggle(q.id)}
-                            className="mt-0.5 h-3.5 w-3.5 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-slate-800">
-                                {formatQuestionTitle(q.question_text)}
-                              </span>
-                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold ${
-                                q.question_type === 'CODING' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-100 text-blue-700 border border-blue-200'
-                              }`}>
-                                {q.question_type || 'MCQ'}
-                              </span>
-                              <span className="text-slate-400 text-[11px]">
-                                ({q.category || 'General'}{q.difficulty ? ` • ${q.difficulty}` : ''} • {q.marks} marks)
-                              </span>
-                            </div>
-                            {q.question_text.includes('\n') && (
-                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                                {q.question_text.split('\n').filter(Boolean).slice(1, 2).join(' ')}
-                              </p>
+                  {/* Section 1: Exam Format Selection */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Exam Format & Type
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleExamTypeChange('MCQ')}
+                        className={`p-3.5 rounded-xl border text-left flex items-start space-x-3 transition ${
+                          examType === 'MCQ'
+                            ? 'bg-teal-50/70 border-teal-600 ring-2 ring-teal-600/20 text-slate-900 shadow-sm'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        <span className="text-2xl mt-0.5">📝</span>
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-bold text-sm text-slate-900">MCQ Quiz</span>
+                            {examType === 'MCQ' && (
+                              <span className="text-[10px] bg-teal-600 text-white font-bold px-1.5 py-0.2 rounded">Selected</span>
                             )}
                           </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Online MCQ test with violation detection, tab-switch warnings, and fullscreen timer.
+                          </p>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExamTypeChange('CODING')}
+                        className={`p-3.5 rounded-xl border text-left flex items-start space-x-3 transition ${
+                          examType === 'CODING'
+                            ? 'bg-purple-50/70 border-purple-600 ring-2 ring-purple-600/20 text-slate-900 shadow-sm'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        <span className="text-2xl mt-0.5">💻</span>
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-bold text-sm text-slate-900">Practical Coding</span>
+                            {examType === 'CODING' && (
+                              <span className="text-[10px] bg-purple-600 text-white font-bold px-1.5 py-0.2 rounded">Selected</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Solve 3 random problems from 10. Local IDE permitted. Students upload source files.
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Basic Info */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                        Exam Title
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Final-Year B.Tech Technical Assessment"
+                        className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                        Description / Instructions
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Assessment instructions or syllabus guidelines..."
+                        className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section 3: Assessment Parameters */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
+                      Timing & Assessment Rules
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Duration (Minutes)
                         </label>
-                      ))
+                        <input
+                          type="number"
+                          min="5"
+                          max="300"
+                          required
+                          value={durationMinutes}
+                          onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-0.5 block">Standard: {examType === 'CODING' ? '60-90m' : '30-60m'}</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Questions / Student
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="300"
+                          required
+                          value={questionsPerAttempt}
+                          onChange={(e) => setQuestionsPerAttempt(parseInt(e.target.value, 10))}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-0.5 block">Random subset from pool</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Max Violations
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          required
+                          disabled={examType === 'CODING'}
+                          value={examType === 'CODING' ? 0 : maxViolations}
+                          onChange={(e) => setMaxViolations(parseInt(e.target.value, 10) || 6)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                          {examType === 'CODING' ? 'Disabled (IDE allowed)' : 'Strikes allowed'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-3 border-t border-slate-200">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Start Datetime
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required
+                          value={startDatetime}
+                          onChange={(e) => setStartDatetime(e.target.value)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          End Datetime
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required
+                          value={endDatetime}
+                          onChange={(e) => setEndDatetime(e.target.value)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Target Departments */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Eligible Student Departments
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      {departments.map((dept) => {
+                        const checked = selectedDepts.includes(dept.id);
+                        return (
+                          <label
+                            key={dept.id}
+                            className={`flex items-center space-x-2.5 px-3.5 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                              checked
+                                ? 'bg-sky-50 border-sky-500 text-sky-900 shadow-sm'
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => handleDeptToggle(dept.id)}
+                              className="h-4 w-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                            />
+                            <span>{dept.name} ({dept.code})</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 5: Question Bank Pool Allocation */}
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Question Pool Allocation
+                          </label>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            examType === 'CODING' ? 'bg-purple-100 text-purple-800' : 'bg-teal-100 text-teal-800'
+                          }`}>
+                            {displayedPoolQuestions.length} Available {examType} Questions
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {examType === 'CODING'
+                            ? `Each student will be served ${questionsPerAttempt} randomly selected problems from this ${selectedQuestions.length}-problem pool.`
+                            : `Each student will be served ${questionsPerAttempt} randomly selected questions from this ${selectedQuestions.length}-question pool.`}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2 self-start sm:self-auto shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllDisplayed}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition"
+                        >
+                          Select All ({displayedPoolQuestions.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeselectAll}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition"
+                        >
+                          Deselect All
+                        </button>
+                        <div className="text-xs font-bold text-teal-800 bg-white px-2.5 py-1 rounded-lg border border-teal-200 whitespace-nowrap shadow-sm">
+                          {selectedQuestions.length} Selected • {calculatedTotalMarks}m
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Search Toolbar */}
+                    <div className="relative mb-3">
+                      <input
+                        type="text"
+                        placeholder={`Search ${displayedPoolQuestions.length} ${examType} questions by keyword, topic or difficulty...`}
+                        value={questionSearch}
+                        onChange={(e) => setQuestionSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600"
+                      />
+                      <Search className="h-4 w-4 text-slate-400 absolute left-3 top-2.5" />
+                      {questionSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setQuestionSearch('')}
+                          className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Optional Reordering Collapsible */}
+                    {selectedQuestions.length > 0 && (
+                      <div className="mb-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowSelectedOrder(!showSelectedOrder)}
+                          className="text-xs font-semibold text-teal-700 hover:text-teal-800 flex items-center space-x-1"
+                        >
+                          <span>{showSelectedOrder ? '▼ Hide' : '▶ Show'} Question Order & Weights ({selectedQuestions.length} selected)</span>
+                        </button>
+
+                        {showSelectedOrder && (
+                          <div className="mt-2 max-h-36 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 bg-white p-2 text-xs">
+                            {selectedQuestionObjects.map((q, idx) => (
+                              <div key={q.id} className="flex items-center justify-between py-1 px-2 hover:bg-slate-50 rounded">
+                                <span className="font-bold text-slate-500 w-6">#{idx + 1}</span>
+                                <span className="flex-1 truncate mx-2 text-slate-800 font-medium">
+                                  {formatQuestionTitle(q.question_text)}
+                                </span>
+                                <span className="text-slate-500 font-mono mr-2">{q.marks}m</span>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestion(idx, 'UP')}
+                                    disabled={idx === 0}
+                                    className="p-0.5 rounded hover:bg-slate-200 disabled:opacity-20"
+                                  >
+                                    <ArrowUp className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestion(idx, 'DOWN')}
+                                    disabled={idx === selectedQuestions.length - 1}
+                                    className="p-0.5 rounded hover:bg-slate-200 disabled:opacity-20"
+                                  >
+                                    <ArrowDown className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
+
+                    {/* Question Checkboxes List */}
+                    <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-white shadow-inner">
+                      {displayedQuestions.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-slate-400">
+                          No {examType} questions found matching "{questionSearch}".
+                        </div>
+                      ) : (
+                        displayedQuestions.map((q) => {
+                          const isChecked = selectedQuestions.includes(q.id);
+                          return (
+                            <label
+                              key={q.id}
+                              className={`flex items-start space-x-3 py-2.5 px-3 cursor-pointer text-xs transition ${
+                                isChecked ? 'bg-teal-50/40 hover:bg-teal-50/60' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleQuestionToggle(q.id)}
+                                className="mt-0.5 h-4 w-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-semibold text-slate-900">
+                                    {formatQuestionTitle(q.question_text)}
+                                  </span>
+                                  <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                    q.question_type === 'CODING'
+                                      ? 'bg-purple-100 text-purple-700'
+                                      : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {q.question_type || 'MCQ'}
+                                  </span>
+                                  {q.difficulty && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                                      {q.difficulty}
+                                    </span>
+                                  )}
+                                  <span className="text-slate-400 text-[11px]">
+                                    • {q.category || 'General'} • {q.marks} marks
+                                  </span>
+                                </div>
+                                {q.question_text.includes('\n') && (
+                                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                    {q.question_text.split('\n').filter(Boolean).slice(1, 2).join(' ')}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="active_cb"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="h-4 w-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
-                  />
-                  <label htmlFor="active_cb" className="text-sm font-medium text-slate-700 cursor-pointer">
-                    Exam is Active
+                {/* Sticky Footer */}
+                <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+                  <label className="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="h-4 w-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+                    />
+                    <span>Exam is Active & Available</span>
                   </label>
-                </div>
 
-                <div className="pt-4 border-t border-slate-200 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-semibold text-sm shadow-sm transition"
-                  >
-                    {editingExam ? 'Update Examination' : 'Create Examination'}
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs shadow-sm transition"
+                    >
+                      {editingExam ? 'Update Examination' : 'Create Examination'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

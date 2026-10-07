@@ -37,9 +37,9 @@ class Command(BaseCommand):
         imported_questions = []
 
         with transaction.atomic():
-            # 1. Remove old demo/placeholder questions that do not have a Q1..Q60 source_id
+            # 1. Remove old demo/placeholder questions that do not have a Q1..Q60 source_id (do NOT delete CODING questions)
             valid_source_ids = {item["source_id"] for item in questions_data}
-            Question.objects.exclude(source_id__in=valid_source_ids).delete()
+            Question.objects.filter(question_type='MCQ').exclude(source_id__in=valid_source_ids).delete()
 
             # 2. Upsert each question and its 4 options
             for item in questions_data:

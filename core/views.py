@@ -453,13 +453,24 @@ def student_save_answer(request, attempt_id):
     if option_id is not None:
         defaults['selected_option'] = selected_option
 
+    existing_answer = StudentAnswer.objects.filter(attempt=attempt, question_id=q_id_int).first()
     if uploaded_file:
         if uploaded_file.size > 15 * 1024 * 1024:
             return Response({"error": "File size exceeds 15MB limit."}, status=status.HTTP_400_BAD_REQUEST)
+        if existing_answer and existing_answer.uploaded_file:
+            try:
+                existing_answer.uploaded_file.delete(save=False)
+            except Exception:
+                pass
         defaults['uploaded_file'] = uploaded_file
         defaults['file_name'] = uploaded_file.name
         defaults['file_size'] = uploaded_file.size
     elif remove_file:
+        if existing_answer and existing_answer.uploaded_file:
+            try:
+                existing_answer.uploaded_file.delete(save=False)
+            except Exception:
+                pass
         defaults['uploaded_file'] = None
         defaults['file_name'] = ''
         defaults['file_size'] = 0
